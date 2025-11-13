@@ -1,4 +1,4 @@
-{{- if .Values.oms.tlssnihostnameref.enabled }}
+{{- if .Values.tlssnihostnameref.enabled }}
 apiVersion: v1
 kind: ServiceAccount
 metadata:
