@@ -29,9 +29,7 @@ jobs:
       - name: Install Helm
         uses: azure/setup-helm@v4
         with:
-          # Leave empty for latest stable, or pin if you like:
-          # version: v3.16.1
-          version: ''
+          version: latest
 
       - name: Validate Helm charts
         run: |
