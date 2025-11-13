@@ -12,13 +12,15 @@ jobs:
   release-charts:
     runs-on: ubuntu-latest
 
-    env:
-      CHARTS: "helm_ua_v1.4.2 helm_ua_v1.5-AKS helm_ua_v1.5-OCP helm_uac_v1.4-AKS helm_uac_v1.4-OCP"
-      UAC_CHARTS: "helm_uac_v1.4-AKS helm_uac_v1.4-OCP"
-
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+
+      - name: Debug – list repo root (optional)
+        run: |
+          set -euo pipefail
+          pwd
+          ls -R
 
       - name: Install dependencies (zip, yamllint)
         run: |
@@ -29,20 +31,26 @@ jobs:
       - name: Install Helm
         uses: azure/setup-helm@v4
         with:
-          # Use the latest stable Helm version
           version: latest
 
       - name: Validate Helm charts
         run: |
           set -euo pipefail
 
-          CHARTS=($CHARTS)
+          # Discover chart directories automatically:
+          # any directory starting with ua- or uac- and containing Chart.yaml
+          CHARTS=()
+          for dir in ua-* uac-*; do
+            if [ -d "$dir" ] && [ -f "$dir/Chart.yaml" ]; then
+              CHARTS+=("$dir")
+            fi
+          done
 
-          # Relaxed yamllint configuration:
-          # - line-length up to 200 chars, only warning
-          # - trailing spaces as warning
-          # - document-start (---) disabled
-          # - comment spacing as warning
+          if [ "${#CHARTS[@]}" -eq 0 ]; then
+            echo "WARNING: No Helm chart directories found (ua-*/uac-* with Chart.yaml)."
+          fi
+
+          # Relaxed yamllint config: style issues are warnings, not fatal
           YAMLLINT_CONF='{extends: default,
             rules: {
               line-length: {max: 200, level: warning},
@@ -52,11 +60,6 @@ jobs:
             }}'
 
           for chart in "${CHARTS[@]}"; do
-            if [ ! -d "$chart" ]; then
-              echo "WARNING: $chart directory not found, skipping validation"
-              continue
-            fi
-
             echo "=== Validating $chart ==="
 
             if [ -f "$chart/values.yaml" ]; then
@@ -82,17 +85,24 @@ jobs:
 
           mkdir -p "$TMP_DIR"
 
-          CHARTS=($CHARTS)
-          UAC_CHARTS=($UAC_CHARTS)
+          # Discover chart directories again
+          CHARTS=()
+          for dir in ua-* uac-*; do
+            if [ -d "$dir" ] && [ -f "$dir/Chart.yaml" ]; then
+              CHARTS+=("$dir")
+            fi
+          done
 
+          if [ "${#CHARTS[@]}" -eq 0 ]; then
+            echo "WARNING: No Helm chart directories found (ua-*/uac-* with Chart.yaml)."
+          fi
+
+          # UAC chart detection by naming convention (uac-*)
           is_uac_chart() {
-            local chart_name="$1"
-            for uac in "${UAC_CHARTS[@]}"; do
-              if [[ "$uac" == "$chart_name" ]]; then
-                return 0
-              fi
-            done
-            return 1
+            case "$1" in
+              uac-*) return 0 ;;
+              *)     return 1 ;;
+            esac
           }
 
           for chart in "${CHARTS[@]}"; do
@@ -103,19 +113,16 @@ jobs:
               continue
             fi
 
-            # Copy chart to temp directory so we don't modify repo files
+            # Copy chart to temp dir so repo content is untouched
             cp -r "$WORKDIR/$chart" "$TMP_DIR/$chart"
 
-            # If this is a UAC chart, strip private image refs in the temp copy
+            # Strip private image refs for UAC charts in the temp copy
             if is_uac_chart "$chart"; then
               VALUES_FILE="$TMP_DIR/$chart/values.yaml"
               if [ -f "$VALUES_FILE" ]; then
                 echo "  Removing private image references from $VALUES_FILE"
 
-                # Add comment before ucDeployment section
                 sed -i '/^############################################ UC Deployment/a # REQUIRED: Provide your Universal Controller image repository and tag below' "$VALUES_FILE"
-
-                # Make repository and tag generic (no hard-coded image or tag) - scoped to ucDeployment block only
                 sed -i '/^ucDeployment:/,/^[^ ]/ s/^\(\s*repository:\s*\).*/\1""/' "$VALUES_FILE"
                 sed -i '/^ucDeployment:/,/^[^ ]/ s/^\(\s*tag:\s*\).*/\1""/' "$VALUES_FILE"
               else
@@ -123,21 +130,21 @@ jobs:
               fi
             fi
 
-            # Create ZIP file (for users who want to just download & edit)
+            # Create ZIP (uses directory name, e.g. ua-aks-1.5.0.zip)
             (
               cd "$TMP_DIR"
               zip -9 -r "${chart}.zip" "$chart" > /dev/null
             )
             echo "  Created ${TMP_DIR}/${chart}.zip"
 
-            # Create proper Helm package (.tgz) from the temp copy
-            # This uses name/version from Chart.yaml
+            # Create Helm package (.tgz) using Chart.yaml name/version
+            # e.g. name: ua-aks, version: 1.5.0 => ua-aks-1.5.0.tgz
             echo "  Creating Helm package for $chart..."
             helm package "$TMP_DIR/$chart" -d "$TMP_DIR" > /dev/null
           done
 
           echo "=== Packaged files ==="
-          ls -lh "$TMP_DIR"
+          ls -lh "$TMP_DIR" || echo "No files in $TMP_DIR"
 
       - name: Ensure charts were packaged
         run: |
@@ -160,15 +167,14 @@ jobs:
             ## Available Charts
 
             ### Universal Agent Charts (Ready to Use)
-            - **helm_ua_v1.4.2.zip** / **.tgz** - Universal Agent v1.4.2 (generic deployment)
-            - **helm_ua_v1.5-AKS.zip** / **.tgz** - Universal Agent v1.5 for Azure Kubernetes Service
-            - **helm_ua_v1.5-OCP.zip** / **.tgz** - Universal Agent v1.5 for OpenShift Container Platform
+            - **ua-aks-1.5.0.zip** / **ua-aks-1.5.0.tgz** - Universal Agent v1.5.0 for Azure Kubernetes Service
+            - **ua-ocp-1.5.0.zip** / **ua-ocp-1.5.0.tgz** - Universal Agent v1.5.0 for OpenShift Container Platform
 
             ### Universal Controller + Agent Charts (Requires Configuration)
-            - **helm_uac_v1.4-AKS.zip** / **.tgz** - Universal Controller + Agent v1.4 for AKS
-            - **helm_uac_v1.4-OCP.zip** / **.tgz** - Universal Controller + Agent v1.4 for OpenShift
+            - **uac-aks-1.4.0.zip** / **uac-aks-1.4.0.tgz** - Universal Controller + Agent v1.4.0 for AKS
+            - **uac-ocp-1.4.0.zip** / **uac-ocp-1.4.0.tgz** - Universal Controller + Agent v1.4.0 for OpenShift
 
-            **⚠️ Important:** UAC charts require you to provide your own Universal Controller image details in `values.yaml`:
+            ** Important:** UAC charts require you to provide your own Universal Controller image details in `values.yaml`:
             - Set `ucDeployment.image.repository` to your controller image repository
             - Set `ucDeployment.image.tag` to your desired version
 

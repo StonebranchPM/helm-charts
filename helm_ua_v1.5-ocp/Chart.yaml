@@ -1,5 +1,5 @@
 apiVersion: v2
-name: Universal Agent
+name: ua-ocp
 description: This Helm chart deploys a Universal Agent in the OpenShift Environment.
 # A chart can be either an 'application' or a 'library' chart.
 #
