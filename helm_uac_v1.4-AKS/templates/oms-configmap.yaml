@@ -1,0 +1,160 @@
+{{- if .Values.oms.enabled }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: '{{ .Release.Name }}-oms-configmap'
+  namespace: {{ .Release.Namespace }}
+data: # OMS Configuration Map -- ONLY ENVIRONMENT VARIABLES SUPPORTED: Order of Components -> UAG -> OMS -> UBR -> UEM -> UDM
+  {{ include "uac.emitIfSet" (dict "name" "UAGAGENTCLUSTERS" "value" .Values.omsConfig.uagagentclusters) | nindent 2 }}
+  {{ include "uac.emitIfSet" (dict "name" "UAGBUSINESSSERVICES" "value" .Values.omsConfig.businessservices) | nindent 2 }}
+  {{ include "uac.emitIfSet" (dict "name" "UAGEXTACCEPTLIST" "value" .Values.omsConfig.extensionacceptlist) | nindent 2 }}
+  {{ include "uac.emitIfSet" (dict "name" "UAGEXTCANCELTIMEOUT" "value" .Values.omsConfig.extensioncanceltimeout) | nindent 2 }}
+  {{ include "uac.emitIfSet" (dict "name" "UAGEXTDEPLOYONREG" "value" .Values.omsConfig.extensiondeployonregistration) | nindent 2 }}
+  {{ include "uac.emitIfSet" (dict "name" "UAGEXTPYTHONLIST" "value" .Values.omsConfig.extensionpythonlist) | nindent 2 }}
+  {{ include "uac.emitIfSet" (dict "name" "UAGNETNAME" "value" .Values.omsConfig.netname) | nindent 2 }}
+  {{ include "uac.emitIfSet" (dict "name" "UAGOMSSERVERS" "value" .Values.omsConfig.omsServers) | nindent 2 }}
+  {{ include "uac.emitIfSet" (dict "name" "UAGPRCCANCELTIMEOUT" "value" .Values.omsConfig.processcanceltimeout) | nindent 2 }}
+  UAGTRANSIENT: "yes"
+  {{ include "uac.emitIfSet" (dict "name" "UAGAUTOSTART" "value" .Values.omsConfig.uagAutostart) | nindent 2 }}
+  {{ include "uac.emitIfSet" (dict "name" "UAGLOGLVL" "value" .Values.omsConfig.uagLoglvl) | nindent 2 }}
+  {{ include "uac.emitIfSet" (dict "name" "UAGLEVEL" "value" .Values.omsConfig.uagLevel) | nindent 2 }}
+
+  {{ include "uac.emitIfSet" (dict "name" "OMSCODEPAGE" "value" .Values.omsConfig.codepage) | nindent 2 }}
+  {{ include "uac.emitIfSet" (dict "name" "OMSDNSCACHETIMEOUT" "value" .Values.omsConfig.omsDNSCacheTimeout) | nindent 2 }}
+  {{ include "uac.emitIfSet" (dict "name" "OMSINDEXCACHESIZE" "value" .Values.omsConfig.omsIndexCacheSize) | nindent 2 }}
+  {{ include "uac.emitIfSet" (dict "name" "OMSMAXCONNECTIONS" "value" .Values.omsConfig.omsMaxConnections) | nindent 2 }}
+  {{ include "uac.emitIfSet" (dict "name" "OMSMAXDATAFILESIZE" "value" .Values.omsConfig.maxfilesize) | nindent 2 }}
+  {{ include "uac.emitIfSet" (dict "name" "OMSMAXMSGSIZE" "value" .Values.omsConfig.maxmessagesize) | nindent 2 }}
+  {{ include "uac.emitIfSet" (dict "name" "OMSMAXSSLPROTOCOL" "value" .Values.omsConfig.omsMaxSSLProtocol) | nindent 2 }}
+  {{ include "uac.emitIfSet" (dict "name" "OMSLANG" "value" .Values.omsConfig.omsLanguage) | nindent 2 }}
+  {{ include "uac.emitIfSet" (dict "name" "OMSMINSSLPROTOCOL" "value" .Values.omsConfig.omsMinSSLProtocol) | nindent 2 }}
+  {{ include "uac.emitIfSet" (dict "name" "OMSMSGCHUNKSIZE" "value" .Values.omsConfig.chunksize) | nindent 2 }}
+  {{ include "uac.emitIfSet" (dict "name" "OMSMSGCLEANUPINTERVAL" "value" .Values.omsConfig.omsMSGCleanupInterval) | nindent 2 }}
+  {{ include "uac.emitIfSet" (dict "name" "OMSMSGDATAFLUSHINT" "value" .Values.omsConfig.omsMSGDataFlushInt) | nindent 2 }}
+  {{ include "uac.emitIfSet" (dict "name" "OMSMSGSUPPRESSIONLIST" "value" .Values.omsConfig.omsMSGSuppressionList) | nindent 2 }}
+
+  {{ include "uac.emitIfSet" (dict "name" "OTEL_ENABLE_TRACING" "value" .Values.omsConfig.otelenabletracing) | nindent 2 }}
+  {{ include "uac.emitIfSet" (dict "name" "OTEL_EXPORT_METRICS" "value" .Values.omsConfig.otelexportmetrics) | nindent 2 }}
+  {{ include "uac.emitIfSet" (dict "name" "OTEL_METRICS_ENDPOINT" "value" .Values.omsConfig.otelmetricsendpoint) | nindent 2 }}
+  {{ include "uac.emitIfSet" (dict "name" "OTEL_METRICS_EXPORT_INTERVAL" "value" .Values.omsConfig.otelmetricsexportinterval) | nindent 2 }}
+  {{ include "uac.emitIfSet" (dict "name" "OTEL_SERVICE_NAME" "value" .Values.omsConfig.otelservicename) | nindent 2 }}
+  {{ include "uac.emitIfSet" (dict "name" "OTEL_SSL_CA_CERT_PATH" "value" .Values.omsConfig.otelsslcacertpath) | nindent 2 }}
+  {{ include "uac.emitIfSet" (dict "name" "OTEL_SSL_CLIENT_CERT_PATH" "value" .Values.omsConfig.otelsslclientcertpath) | nindent 2 }}
+  {{ include "uac.emitIfSet" (dict "name" "OTEL_SSL_CLIENT_KEY_PATH" "value" .Values.omsConfig.otelsslclientkeypath) | nindent 2 }}
+  {{ include "uac.emitIfSet" (dict "name" "OTEL_SSL_INSECURE_SKIP_VERIFY" "value" .Values.omsConfig.otelsslinsecureskipverify) | nindent 2 }}
+  {{ include "uac.emitIfSet" (dict "name" "OTEL_TRACE_ENDPOINT" "value" .Values.omsConfig.oteltraceendpoint) | nindent 2 }}
+  UAGTLSSNIHOSTNAME: '{{ .Values.istio.udmConnectionPort }}@{{ .Values.istio.host }}:{{ .Values.istio.host }}'
+  {{ include "uac.emitIfSet" (dict "name" "OMSREQUIRESSL" "value" .Values.omsConfig.omsRequiresSSL) | nindent 2 }}
+  {{ include "uac.emitIfSet" (dict "name" "OMSSERVICEBACKLOG" "value" .Values.omsConfig.omsServiceBacklog) | nindent 2 }}
+  {{ include "uac.emitIfSet" (dict "name" "OMSSVCIPADDR" "value" .Values.omsConfig.omsSVCIAddr) | nindent 2 }}
+  {{ include "uac.emitIfSet" (dict "name" "OMSSVCPORT" "value" .Values.omsConfig.omsSVCIPort) | nindent 2 }}
+  {{ include "uac.emitIfSet" (dict "name" "OMSSERVICETIMEOUT" "value" .Values.omsConfig.omsServiceTimeout) | nindent 2 }}
+  {{ include "uac.emitIfSet" (dict "name" "OMSSSLCIPHERLIST" "value" .Values.omsConfig.sslcipherlist) | nindent 2 }}
+  {{ include "uac.emitIfSet" (dict "name" "OMSSSLCIPHERSUITES" "value" .Values.omsConfig.sslciphersuites) | nindent 2 }}
+  {{ include "uac.emitIfSet" (dict "name" "OMSTRACEFILELINES" "value" .Values.omsConfig.omstracefilelines) | nindent 2 }}
+  {{ include "uac.emitIfSet" (dict "name" "OMSTRACETABLE" "value" .Values.omsConfig.omstracetable) | nindent 2 }}
+  {{ include "uac.emitIfSet" (dict "name" "OMSAUTOSTART" "value" .Values.omsConfig.omsAutostart) | nindent 2 }}
+
+  {{ include "uac.emitIfSet" (dict "name" "UBRACTIVITYMONITORING" "value" .Values.omsConfig.ubractivitymonitoring) | nindent 2 }}
+  {{ include "uac.emitIfSet" (dict "name" "UBRCACERTS" "value" .Values.omsConfig.ubrcacerts) | nindent 2 }}
+  {{ include "uac.emitIfSet" (dict "name" "UBRCERT" "value" .Values.omsConfig.ubrcert) | nindent 2 }}
+  {{ include "uac.emitIfSet" (dict "name" "UBRCRL" "value" .Values.omsConfig.ubrcrl) | nindent 2 }}
+  {{ include "uac.emitIfSet" (dict "name" "UBRCODEPAGE" "value" .Values.omsConfig.codepage) | nindent 2 }}
+  {{ include "uac.emitIfSet" (dict "name" "UBRCOMPINFORETENTION" "value" .Values.omsConfig.ubrcompinforetention) | nindent 2 }}
+  {{ include "uac.emitIfSet" (dict "name" "UBRCOMPONENTBACKLOG" "value" .Values.omsConfig.ubrcomponentbacklog) | nindent 2 }}
+  {{ include "uac.emitIfSet" (dict "name" "UBRCMPPORT" "value" .Values.omsConfig.ubrcmpport) | nindent 2 }}
+  {{ include "uac.emitIfSet" (dict "name" "UBRCTLSSLCIPHERLIST" "value" .Values.omsConfig.sslcipherlist) | nindent 2 }}
+  {{ include "uac.emitIfSet" (dict "name" "UBRCTLSSLCIPHERSUITES" "value" .Values.omsConfig.sslciphersuites) | nindent 2 }}
+  {{ include "uac.emitIfSet" (dict "name" "UBRDBFILEGENERATIONS" "value" .Values.omsConfig.ubrdbfilegenerations) | nindent 2 }}
+  {{ include "uac.emitIfSet" (dict "name" "UBRDNSCACHETIMEOUT" "value" .Values.omsConfig.ubrdnscachetimeout) | nindent 2 }}
+  {{ include "uac.emitIfSet" (dict "name" "UBRECDSACERT" "value" .Values.omsConfig.ubrecdsacert) | nindent 2 }}
+  {{ include "uac.emitIfSet" (dict "name" "UBRECDSAPRIVATEKEYPWD" "value" .Values.omsConfig.ubrecdsaprivatekeypwd) | nindent 2 }}
+  {{ include "uac.emitIfSet" (dict "name" "UBRECDSAPRIVATEKEY" "value" .Values.omsConfig.ubrecdsaprivatekey) | nindent 2 }}
+  {{ include "uac.emitIfSet" (dict "name" "UBREVENTGENERATION" "value" .Values.omsConfig.ubreventgeneration) | nindent 2 }}
+  {{ include "uac.emitIfSet" (dict "name" "UBRMAXSSLPROTOCOL" "value" .Values.omsConfig.omsMaxSSLProtocol) | nindent 2 }}
+  {{ include "uac.emitIfSet" (dict "name" "UBRDEST" "value" .Values.omsConfig.ubrdest) | nindent 2 }}
+  {{ include "uac.emitIfSet" (dict "name" "UBRLANG" "value" .Values.omsConfig.omsLanguage) | nindent 2 }}
+  {{ include "uac.emitIfSet" (dict "name" "UBRLEVEL" "value" .Values.omsConfig.ubrlevel) | nindent 2 }}
+  {{ include "uac.emitIfSet" (dict "name" "UBRMINSSLPROTOCOL" "value" .Values.omsConfig.omsMinSSLProtocol) | nindent 2 }}
+  {{ include "uac.emitIfSet" (dict "name" "UBRMONITOREVENTEXP" "value" .Values.omsConfig.ubrmonitoreventexp) | nindent 2 }}
+  {{ include "uac.emitIfSet" (dict "name" "UBRMOUNTPOINT" "value" .Values.omsConfig.ubrmountpoint) | nindent 2 }}
+  {{ include "uac.emitIfSet" (dict "name" "UBRMOUNTPOINTMODE" "value" .Values.omsConfig.ubrmountpointmode) | nindent 2 }}
+  {{ include "uac.emitIfSet" (dict "name" "UBRMSGSUPPRESSIONLIST" "value" .Values.omsConfig.ubrmsgsuppressionlist) | nindent 2 }}
+  {{ include "uac.emitIfSet" (dict "name" "UBRPERSISTENTEVENTEXP" "value" .Values.omsConfig.ubrpersistenteventexp) | nindent 2 }}
+  {{ include "uac.emitIfSet" (dict "name" "UBRPRIVATEKEY" "value" .Values.omsConfig.ubrprivatekey) | nindent 2 }}
+  {{ include "uac.emitIfSet" (dict "name" "UBRPRIVATEKEYPWD" "value" .Values.omsConfig.ubrprivatekeypwd) | nindent 2 }}
+  {{ include "uac.emitIfSet" (dict "name" "UBRREQUIRESSL" "value" .Values.omsConfig.omsRequiresSSL) | nindent 2 }}
+  {{ include "uac.emitIfSet" (dict "name" "UBRRETRYMAXCOMP" "value" .Values.omsConfig.ubrretrymaxcomp) | nindent 2 }}
+  {{ include "uac.emitIfSet" (dict "name" "UBRSAFKEYRING" "value" .Values.omsConfig.ubrsafkeyring) | nindent 2 }}
+  {{ include "uac.emitIfSet" (dict "name" "UBRSAFKEYRINGLABEL" "value" .Values.omsConfig.ubrsafkeyringlabel) | nindent 2 }}
+  {{ include "uac.emitIfSet" (dict "name" "UBRSERVICEBACKLOG" "value" .Values.omsConfig.ubrservicebacklog) | nindent 2 }}
+  {{ include "uac.emitIfSet" (dict "name" "UBRSVCIPADDR" "value" .Values.omsConfig.ubrsvcipaddr) | nindent 2 }}
+  {{ include "uac.emitIfSet" (dict "name" "UBRSVCPORT" "value" .Values.omsConfig.ubrsvcport) | nindent 2 }}
+  {{ include "uac.emitIfSet" (dict "name" "UBRSHRMOUNTPOINT" "value" .Values.omsConfig.ubrshrmountpoint) | nindent 2 }}
+  {{ include "uac.emitIfSet" (dict "name" "UBRSHRMOUNTPOINTMODE" "value" .Values.omsConfig.ubrshrmountpointmode) | nindent 2 }}
+  {{ include "uac.emitIfSet" (dict "name" "UBRSMFEXITLOADLIBRARY" "value" .Values.omsConfig.ubrsmfexitloadlibrary) | nindent 2 }}
+  {{ include "uac.emitIfSet" (dict "name" "UBRSSLIMPLEMENTATION" "value" .Values.omsConfig.ubrsslimplementation) | nindent 2 }}
+  {{ include "uac.emitIfSet" (dict "name" "UBRSYSTEMID" "value" .Values.omsConfig.ubrsystemid) | nindent 2 }}
+  {{ include "uac.emitIfSet" (dict "name" "UBRTCPRECVBUFFER" "value" .Values.omsConfig.ubrtcprecvbuffer) | nindent 2 }}
+  {{ include "uac.emitIfSet" (dict "name" "UBRTCPSENDBUFFER" "value" .Values.omsConfig.ubrtcpsendbuffer) | nindent 2 }}
+  {{ include "uac.emitIfSet" (dict "name" "UBRTRACEFILELINES" "value" .Values.omsConfig.ubrtracefilelines) | nindent 2 }}
+  {{ include "uac.emitIfSet" (dict "name" "UCMDTRACETABLE" "value" .Values.omsConfig.ucmdtracetable) | nindent 2 }}
+  {{ include "uac.emitIfSet" (dict "name" "UBRUCMDSTCSUPPORT" "value" .Values.omsConfig.ubrucmdstcsupport) | nindent 2 }}
+  {{ include "uac.emitIfSet" (dict "name" "UBRUCMDPATH" "value" .Values.omsConfig.ubrucmdpath) | nindent 2 }}
+
+  {{ include "uac.emitIfSet" (dict "name" "UEMAUTOSTART" "value" .Values.omsConfig.uemAutostart) | nindent 2 }}
+
+  {{ include "uac.emitIfSet" (dict "name" "UDMACKWINDOW" "value" .Values.omsConfig.udmackwindow) | nindent 2 }}
+  {{ include "uac.emitIfSet" (dict "name" "UDMALLOWREPLONRENAME" "value" .Values.omsConfig.udmallowreplonrename) | nindent 2 }}
+  {{ include "uac.emitIfSet" (dict "name" "UDMBIFDIRECTORY" "value" .Values.omsConfig.udmbifdirectory) | nindent 2 }}
+  {{ include "uac.emitIfSet" (dict "name" "UDMCACERTS" "value" .Values.omsConfig.udmcacerts) | nindent 2 }}
+  {{ include "uac.emitIfSet" (dict "name" "UDMCERT" "value" .Values.omsConfig.udmcert) | nindent 2 }}
+  {{ include "uac.emitIfSet" (dict "name" "UDMDAYSTILEXPIRE" "value" .Values.omsConfig.udmdaystilexpire) | nindent 2 }}
+  {{ include "uac.emitIfSet" (dict "name" "UDMCRL" "value" .Values.omsConfig.udmcrl) | nindent 2 }}
+  {{ include "uac.emitIfSet" (dict "name" "UDMCODEPAGE" "value" .Values.omsConfig.codepage) | nindent 2 }}
+  {{ include "uac.emitIfSet" (dict "name" "UDMCTLSSLCIPHERLIST" "value" .Values.omsConfig.sslcipherlist) | nindent 2 }}
+  {{ include "uac.emitIfSet" (dict "name" "UDMCTLSSLCIPHERSUITES" "value" .Values.omsConfig.sslciphersuites) | nindent 2 }}
+  {{ include "uac.emitIfSet" (dict "name" "UDMENCRYPT" "value" .Values.omsConfig.udmencrypt) | nindent 2 }}
+  {{ include "uac.emitIfSet" (dict "name" "UDMFRAMEINTERVAL" "value" .Values.omsConfig.udmframeinterval) | nindent 2 }}
+  {{ include "uac.emitIfSet" (dict "name" "UDMIDLETIMEOUT" "value" .Values.omsConfig.udmidletimeout) | nindent 2 }}
+  {{ include "uac.emitIfSet" (dict "name" "UDMKEEPALIIVEINTERVAL" "value" .Values.omsConfig.udmkeepaliveinterval) | nindent 2 }}
+  {{ include "uac.emitIfSet" (dict "name" "UDMMAXSSLPROTOCOL" "value" .Values.omsConfig.omsMaxSSLProtocol) | nindent 2 }}
+  {{ include "uac.emitIfSet" (dict "name" "UDMMERGELOG" "value" .Values.omsConfig.udmmergelog) | nindent 2 }}
+  {{ include "uac.emitIfSet" (dict "name" "UDMLANG" "value" .Values.omsConfig.omsLanguage) | nindent 2 }}
+  {{ include "uac.emitIfSet" (dict "name" "UDMLEVEL" "value" .Values.omsConfig.udmlevel) | nindent 2 }}
+  {{ include "uac.emitIfSet" (dict "name" "UDMMINSSLPROTOCOL" "value" .Values.omsConfig.omsMinSSLProtocol) | nindent 2 }}
+  {{ include "uac.emitIfSet" (dict "name" "UDMMODETYPE" "value" .Values.omsConfig.udmmodetype) | nindent 2 }}
+  {{ include "uac.emitIfSet" (dict "name" "UDMMSGSUPPRESSIONLIST" "value" .Values.omsConfig.udmmsgsuppressionlist) | nindent 2 }}
+  {{ include "uac.emitIfSet" (dict "name" "UDMDELAY" "value" .Values.omsConfig.udmdelay) | nindent 2 }}
+  {{ include "uac.emitIfSet" (dict "name" "UDMNETWORKFAULTTOLERANT" "value" .Values.omsConfig.udmnetworkfaulttolerant) | nindent 2 }}
+  {{ include "uac.emitIfSet" (dict "name" "UDMOPENRETRY" "value" .Values.omsConfig.udmopenretry) | nindent 2 }}
+  {{ include "uac.emitIfSet" (dict "name" "UDMOPENRETRYCOUNT" "value" .Values.omsConfig.udmopenretrycount) | nindent 2 }}
+  {{ include "uac.emitIfSet" (dict "name" "UDMOPENRETRYINTERVAL" "value" .Values.omsConfig.udmopenretryinterval) | nindent 2 }}
+  {{ include "uac.emitIfSet" (dict "name" "UDMOUTBOUNDIP" "value" .Values.omsConfig.udmoutboundip) | nindent 2 }}
+  {{ include "uac.emitIfSet" (dict "name" "UDMPLFDIRECTORY" "value" .Values.omsConfig.udmplfdirectory) | nindent 2 }}
+  {{ include "uac.emitIfSet" (dict "name" "UDMPRIVATEKEY" "value" .Values.omsConfig.udmprivatekey) | nindent 2 }}
+  {{ include "uac.emitIfSet" (dict "name" "UDMPRIVATEKEYPWD" "value" .Values.omsConfig.udmprivatekeypwd) | nindent 2 }}
+  {{ include "uac.emitIfSet" (dict "name" "UDMPROXYCERTIFICATES" "value" .Values.omsConfig.udmproxycertificates) | nindent 2 }}
+  {{ include "uac.emitIfSet" (dict "name" "UDMRETRYCOUNT" "value" .Values.omsConfig.udmretrycount) | nindent 2 }}
+  {{ include "uac.emitIfSet" (dict "name" "UDMRETRYINTERVAL" "value" .Values.omsConfig.udmretryinterval) | nindent 2 }}
+  {{ include "uac.emitIfSet" (dict "name" "UDMRECVBUFSSIZE" "value" .Values.omsConfig.udmrecvbufssize) | nindent 2 }}
+  {{ include "uac.emitIfSet" (dict "name" "UDMPORT" "value" .Values.omsConfig.udmport) | nindent 2 }}
+  {{ include "uac.emitIfSet" (dict "name" "UDMSAFKEYRING" "value" .Values.omsConfig.udmsafkeyring) | nindent 2 }}
+  {{ include "uac.emitIfSet" (dict "name" "UDMSAFKEYRINGLABEL" "value" .Values.omsConfig.udmsafkeyringlabel) | nindent 2 }}
+  {{ include "uac.emitIfSet" (dict "name" "UDMSCRIPT" "value" .Values.omsConfig.udmscript) | nindent 2 }}
+  {{ include "uac.emitIfSet" (dict "name" "UDMOPTIONS" "value" .Values.omsConfig.udmoptions) | nindent 2 }}
+  {{ include "uac.emitIfSet" (dict "name" "UDMSENDBUFSSIZE" "value" .Values.omsConfig.udmsendbufssize) | nindent 2 }}
+  {{ include "uac.emitIfSet" (dict "name" "UDMSERVERSTOPCONDITIONS" "value" .Values.omsConfig.udmserverstopconditions) | nindent 2 }}
+  {{ include "uac.emitIfSet" (dict "name" "UDMSIZEATTRIB" "value" .Values.omsConfig.udmsizeattrib) | nindent 2 }}
+  {{ include "uac.emitIfSet" (dict "name" "UDMSSLIMPLEMENTATION" "value" .Values.omsConfig.udmsslimplementation) | nindent 2 }}
+  {{ include "uac.emitIfSet" (dict "name" "UDMSYSTEMID" "value" .Values.omsConfig.udmsystemid) | nindent 2 }}
+  {{ include "uac.emitIfSet" (dict "name" "UDMTCPNODELAY" "value" .Values.omsConfig.udmtcpnodelay) | nindent 2 }}
+  {{ include "uac.emitIfSet" (dict "name" "UDMTCPRECVBUFFER" "value" .Values.omsConfig.udmtcprecvbuffer) | nindent 2 }}
+  {{ include "uac.emitIfSet" (dict "name" "UDMTCPSENDBUFFER" "value" .Values.omsConfig.udmtcpsendbuffer) | nindent 2 }}
+  {{ include "uac.emitIfSet" (dict "name" "UDMTRACEFILELINES" "value" .Values.omsConfig.udmtracefilelines) | nindent 2 }}
+  {{ include "uac.emitIfSet" (dict "name" "UDMTRACETABLE" "value" .Values.omsConfig.udmtracetable) | nindent 2 }}
+  {{ include "uac.emitIfSet" (dict "name" "UDMUCMDPATH" "value" .Values.omsConfig.udmucmdpath) | nindent 2 }}
+  {{ include "uac.emitIfSet" (dict "name" "UDMUMASK" "value" .Values.omsConfig.udmumask) | nindent 2 }}
+  {{ include "uac.emitIfSet" (dict "name" "UDMUSAPDPATH" "value" .Values.omsConfig.udmusapdpath) | nindent 2 }}
+  {{ include "uac.emitIfSet" (dict "name" "UDMVERIFYHOSTNAME" "value" .Values.omsConfig.udmverifyhostname) | nindent 2 }}
+{{- end }}

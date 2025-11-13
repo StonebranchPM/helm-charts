@@ -1,0 +1,4 @@
+# Exclude image pull secrets for private registries
+**/image-secret.yaml
+**/templates/image-secret.yaml
+image-secret.yaml

@@ -1,0 +1,29 @@
+{{- if and .Values.istio.enabled .Values.omsDeployment.enabled (not (.Capabilities.APIVersions.Has "route.openshift.io/v1")) }}
+apiVersion: networking.istio.io/v1
+kind: VirtualService
+metadata:
+  name: {{ .Release.Name }}-tls-vs
+  namespace: {{ .Release.Namespace }}
+spec:
+  gateways: ["{{ .Release.Name }}-uac-gateway"]
+  hosts: [{{ .Values.istio.host | quote }}]
+  tls:
+  - match:
+    - port: {{ .Values.istio.omsConnectionPort }}   # e.g., 444
+      sniHosts: [{{ .Values.istio.host | quote }}]
+    route:
+    - destination:
+        host: '{{ .Release.Name }}-oms-service.{{ .Release.Namespace }}.svc.cluster.local'
+        port:
+          number: 7878
+      weight: 100
+  - match:
+    - port: {{ .Values.istio.udmConnectionPort }}
+      sniHosts: [{{ .Values.istio.host | quote }}]
+    route:
+    - destination:
+        host: '{{ .Release.Name }}-oms-service.{{ .Release.Namespace }}.svc.cluster.local'
+        port:
+          number: 7887
+      weight: 100
+{{- end }}

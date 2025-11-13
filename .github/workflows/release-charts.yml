@@ -1,0 +1,108 @@
+name: Release Helm Charts
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: write
+
+jobs:
+  release-charts:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Prepare chart packages
+        run: |
+          set -euo pipefail
+
+          WORKDIR="$(pwd)"
+          TMP_DIR="/tmp/charts"
+
+          mkdir -p "$TMP_DIR"
+
+          # List of all chart directories
+          CHARTS=("helm_ua_v1.4.2" "helm_ua_v1.5-AKS" "helm_ua_v1.5-OCP" "helm_uac_v1.4-AKS" "helm_uac_v1.4-OCP")
+
+          # UAC charts that need private image references removed
+          UAC_CHARTS=("helm_uac_v1.4-AKS" "helm_uac_v1.4-OCP")
+
+          for chart in "${CHARTS[@]}"; do
+            echo "Processing $chart..."
+
+            if [ ! -d "$WORKDIR/$chart" ]; then
+              echo "  WARNING: $chart directory not found, skipping"
+              continue
+            fi
+
+            # Copy chart to temp directory
+            cp -r "$WORKDIR/$chart" "$TMP_DIR/$chart"
+
+            # Check if this is a UAC chart
+            if [[ " ${UAC_CHARTS[*]} " == *" ${chart} "* ]]; then
+              VALUES_FILE="$TMP_DIR/$chart/values.yaml"
+              echo "  Removing private image references from $VALUES_FILE"
+
+              # Add comment before ucDeployment section
+              sed -i '/^############################################ UC Deployment/a # REQUIRED: Provide your Universal Controller image repository and tag below' "$VALUES_FILE"
+
+              # Make repository and tag generic (no hard-coded image or tag) - scoped to ucDeployment block only
+              sed -i '/^ucDeployment:/,/^[^ ]/ s/^\(\s*repository:\s*\).*/\1""/' "$VALUES_FILE"
+              sed -i '/^ucDeployment:/,/^[^ ]/ s/^\(\s*tag:\s*\).*/\1""/' "$VALUES_FILE"
+            fi
+
+            # Create ZIP file (subshell so we don't change the main working dir)
+            (
+              cd "$TMP_DIR"
+              zip -9 -r "${chart}.zip" "$chart" > /dev/null
+            )
+            echo "  Created ${TMP_DIR}/${chart}.zip"
+          done
+
+          # List created ZIPs
+          ls -lh "$TMP_DIR"/*.zip
+
+      - name: Create/Update GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: latest
+          name: Latest Helm Charts
+          body: |
+            # Stonebranch Universal Automation Helm Charts
+
+            This release contains the latest versions of Helm charts for deploying Stonebranch Universal Automation components on Kubernetes.
+
+            ## Available Charts
+
+            ### Universal Agent Charts (Ready to Use)
+            - **helm_ua_v1.4.2.zip** - Universal Agent v1.4.2 (generic deployment)
+            - **helm_ua_v1.5-AKS.zip** - Universal Agent v1.5 for Azure Kubernetes Service
+            - **helm_ua_v1.5-OCP.zip** - Universal Agent v1.5 for OpenShift Container Platform
+
+            ### Universal Controller + Agent Charts (Requires Configuration)
+            - **helm_uac_v1.4-AKS.zip** - Universal Controller + Agent v1.4 for AKS
+            - **helm_uac_v1.4-OCP.zip** - Universal Controller + Agent v1.4 for OpenShift
+
+            **⚠️ Important:** UAC charts require you to provide your own Universal Controller image details in `values.yaml`:
+            - Set `ucDeployment.image.repository` to your controller image repository
+            - Set `ucDeployment.image.tag` to your desired version
+
+            ## Installation
+
+            1. Download the appropriate ZIP file for your platform
+            2. Extract the chart: `unzip <chart-name>.zip`
+            3. Review and customize `values.yaml` according to your environment
+            4. Install using Helm: `helm install <release-name> ./<chart-directory>`
+
+            ## Support
+
+            For questions or issues, contact: len-maurice.seemann@stonebranch.com
+          files: |
+            /tmp/charts/*.zip
+          draft: false
+          prerelease: false
+          make_latest: true

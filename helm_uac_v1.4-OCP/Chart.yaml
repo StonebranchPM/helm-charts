@@ -1,0 +1,28 @@
+apiVersion: v2
+name: universal-controller
+description: A production-ready Helm chart for Universal Controller with OMS agent, external database support, and Istio service mesh integration
+type: application
+version: 1.4.0
+appVersion: "7.9.0.0"
+
+keywords:
+  - automation
+  - workflow
+  - stonebranch
+  - universal-controller
+  - external-database
+  - oms
+  - istio
+  - service-mesh
+  - tls-sni
+  - azure-file
+  - workload-identity
+  - storage-class
+  - security
+
+home: https://www.stonebranch.com
+
+
+maintainers:
+  - name: Product & Solutions Management Team
+    email: len-maurice.seemann@stonebranch.com

@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Release.Name }}-ua-service
+  namespace: {{ .Release.Namespace }}
+spec:
+  selector:
+    app: {{ .Release.Name }}-ua-app
+  ports:
+    - name: port-7878
+      protocol: TCP
+      port: {{ .Values.services.uaService.servicePort | int }}
+      targetPort: {{ .Values.services.uaService.targetPort | int }}
+

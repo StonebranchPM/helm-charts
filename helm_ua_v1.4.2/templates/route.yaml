@@ -1,0 +1,15 @@
+{{- /* Only render Route on OpenShift when enabled */ -}}
+{{- if and .Values.route.enabled (.Capabilities.APIVersions.Has "route.openshift.io/v1") }}
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: {{ .Release.Name }}-ua-route
+  namespace: {{ .Release.Namespace }}
+spec:
+  to:
+    kind: Service
+    name: {{ .Release.Name }}-ua-service
+  tls:
+    termination: passthrough
+    insecureEdgeTerminationPolicy: None
+{{- end }}

@@ -1,0 +1,99 @@
+# templates/uc-deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: '{{ .Release.Name }}-uc'
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "universal-controller.labels" . | nindent 4 }}
+    app.kubernetes.io/component: uc
+spec:
+  replicas: {{ .Values.ucDeployment.replicas }}
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: {{ include "universal-controller.name" . }}
+      app.kubernetes.io/instance: {{ .Release.Name }}
+      app.kubernetes.io/component: uc
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: {{ include "universal-controller.name" . }}
+        app.kubernetes.io/instance: {{ .Release.Name }}
+        app.kubernetes.io/component: uc
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8080"
+        prometheus.io/path: "/uc/resources/metrics"
+        checksum/config: {{ include (print $.Template.BasePath "/uc-configmap.yaml") . | sha256sum }}
+        checksum/passwords: {{ include (print $.Template.BasePath "/uc-secret.yaml") . | sha256sum }}
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        seccompProfile:
+          type: RuntimeDefault
+      {{- if .Values.ucDeployment.imagePullSecrets.enabled }}
+      imagePullSecrets:
+        - name: {{ .Release.Name }}-secret-repo
+      {{- end }}
+      containers:
+        - name: uc-container
+          image: "{{ .Values.ucDeployment.image.repository }}:{{ .Values.ucDeployment.image.tag }}"
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8080
+          envFrom:
+            - configMapRef:
+                name: {{ .Release.Name }}-uc-configmap
+          env:
+            # Secrets (either from KeyVault sync or k8s Secret)
+            - name: UC_DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Release.Name }}-passwords
+                  key: password
+            - name: UC_TRUSTMANAGER_TRUSTSTORE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Release.Name }}-passwords
+                  key: password-truststore
+            - name: UC_TRUSTMANAGER_TRUSTSTORE_PASSWORD_ENCRYPTED
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Release.Name }}-passwords
+                  key: UC_TRUSTMANAGER_TRUSTSTORE_PASSWORD_ENCRYPTED
+            - name: UC_KEYMANAGER_KEYSTORE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Release.Name }}-passwords
+                  key: password-keystore
+          resources: {{- toYaml .Values.ucDeployment.resources | nindent 12 }}
+          startupProbe:
+            httpGet:
+              path: /uc/resources/clusternode/healthcheck
+              port: 8080
+              scheme: HTTP
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 30  # ~5 minutes
+
+          readinessProbe:
+            httpGet:
+              path: /uc/resources/clusternode/healthcheck
+              port: 8080
+              scheme: HTTP
+            initialDelaySeconds: 20
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 6
+
+          livenessProbe:
+            httpGet:
+              path: /uc/resources/clusternode/healthcheck
+              port: 8080
+              scheme: HTTP
+            initialDelaySeconds: 120
+            periodSeconds: 20
+            timeoutSeconds: 5
+            failureThreshold: 5
+

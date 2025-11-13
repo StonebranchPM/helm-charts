@@ -1,0 +1,41 @@
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: {{ .Release.Name }}-udm-route
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "universal-controller.labels" . | nindent 4 }}
+    app.kubernetes.io/component: ua-route
+  annotations:
+    "helm.sh/hook": pre-install,pre-upgrade
+    "helm.sh/hook-weight": "1"
+    "helm.sh/hook-delete-policy": before-hook-creation
+spec:
+  to:
+    kind: Service
+    name: {{ .Release.Name }}-ua-service
+  tls:
+    termination: passthrough
+    insecureEdgeTerminationPolicy: None
+---
+{{- if .Values.uaConfig.omsAutostart "yes" }}
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: {{ .Release.Name }}-oms-route
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "universal-controller.labels" . | nindent 4 }}
+    app.kubernetes.io/component: ua-route
+  annotations:
+    "helm.sh/hook": pre-install,pre-upgrade
+    "helm.sh/hook-weight": "1"
+    "helm.sh/hook-delete-policy": before-hook-creation
+spec:
+  to:
+    kind: Service
+    name: {{ .Release.Name }}-oms-service
+  tls:
+    termination: passthrough
+    insecureEdgeTerminationPolicy: None
+{{- end }}

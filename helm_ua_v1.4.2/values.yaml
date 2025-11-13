@@ -1,0 +1,183 @@
+#################################################################################################
+#
+#  Universal Controller OpenShift Deployment
+#  
+#  Description
+#  The helm chart related to this values.yaml file
+#  deploys a Universal Agent incl. a given Namespace
+#  The following PODs will be deployed: 
+#  - Universal Agent 
+#  
+#  v1.3.0 - 2025-09-01 - Changed from setting value.namespace to using .Release.Namespace
+#                      - Added Creation of PVC if not already existing
+#                      - PVC mounting issue resolved in deployment.yaml
+#################################################################################################
+
+###################################################### Node Selector Configuration ############################################################################################
+nodeSelector:
+  kubernetes.io/os: linux
+  agentpool: sbnodepool
+
+tolerations: []
+
+nodeAffinity: {}
+###################################################### Universal Agent Deployment Configuration ####################################################################################
+uaDeployment:
+  replicas: 1
+  containerName: universal-agent
+  containerImage: stonebranch/universal-agent
+  ImageTag: latest
+  containerPort: 7878
+  persistence:
+    enabled: true     
+    mountPath: "/tmp/"
+    claimName: "" # leave empty to create a new PVC
+    accessMode: # only if creating a new PVC
+      - ReadWriteOnce 
+    size: 1Gi # only if creating a new PVC
+    storageClassName: "" # only if creating a new PVC, leave empty for default storage class, mutually exclusive with persistentVolumeName
+    persistentVolumeName: "" # only if creating a new PVC, leave empty to let k8s create a PV, mutually exclusive with storageClassName
+    volumeMode: Filesystem # oder Block
+  
+###################################################### UA Config Values ###########################################################################################################
+uaConfig:
+  uagTransient: "yes"
+  uagSNIHostname: ""  #PORT@HOSTNAME:SNI_HOSTNAME
+  omsServers: "7878@127.0.0.1"
+  omsPort: "7878"
+  omsAutoStart: "no" 
+  uagagentclusters: "Default"
+  tmpdirectory: "/var/opt/universal/tmp"
+  tracefilelines: "500000000"
+  tracetable: "0,never"
+  tracedirectory: "/var/opt/universal/trace"
+  messagelevel: "INFO"
+  codepage: "iso8859-1"
+  proxyurl: "(none)"
+  loglvl: "I"
+  txtdebug: "N"
+  netname: "OPSAUTOCONF"
+  security: "PAM"
+  sslserverauth: "NO"  
+  sslclientauth: "NO"
+  sslcipherlist: "AES256-GCM-SHA384,AES256-SHA,AES128-GCM-SHA256,AES128-SHA, +
+                  ECDHE-RSA-AES256-GCM-SHA384,ECDHE-ECDSA-AES256-GCM-SHA384, +
+                  ECDHE-RSA-AES128-GCM-SHA256,ECDHE-ECDSA-AES128-GCM-SHA256, +
+                  DES-CBC3-SHA,NULL-SHA,NULL-SHA256,NULL-MD5"
+  sslciphersuites: "TLS_AES_256_GCM_SHA384,TLS_CHACHA20_POLY1305_SHA256, +
+                    TLS_AES_128_GCM_SHA256"
+  minsslprotocol: "TLS1_2"
+  maxsslprotocol: "TLS1_2"
+  datadirectory: "/var/opt/universal/uag" 
+  jtsknum: "5"
+  taskretrycount: "0"
+  taskretryinterval: "20"
+  ftpfmfaulttolerance: "NO"
+  processcanceltimeout: "10 seconds"
+  killprocesstree: "NO"
+  servicetimeout: "0"
+  extensionacceptlist: "*"
+  extensiondeployonregistration: "NO"
+  extensionpythonlist: "/usr/bin/python3,/usr/bin/python,/usr/libexec/platform-python"
+  extensionchecksumtimeout: "5s"
+  extensioncanceltimeout: "10s"
+  businessservices: "App1"
+  otelenabletracing: "NO"
+  otelexportmetrics: "NO"
+  oteltraceendpoint: "http://localhost:4318"
+  otelmetricsendpoint: "http://localhost:4318"
+  otelmetricsexportinterval: "5"
+  otelservicename: "uagsrv"
+  oteluipservicename: "uip/${extension_name}"
+  otelsslinsecureskipverify: "NO"
+  otelsslcacertpath: "(none)"
+  otelsslclientcertpath: "(none)"
+  maxmessagesize: "1G"
+  maxfilesize: "536870912"
+  chunksize: "1G"
+  authenticatePeer: ""
+  omsDNSCacheTimeout: "120"
+  omsIndexCacheSize: "1048576"
+  InstallationDirectory: ""
+  omsMaxConnections: "2048"
+  omsMaxSSLProtocol: "TLS1_2"
+  omsLanguage: "ENGLISH"
+  omsLevel: 'info'
+  omsMinSSLProtocol: "TLS1_2"
+  omsMSGCleanupInterval: "1800"
+  omsMSGDataFlushInt: "1"
+  omsMSGSuppressionList: "193" 
+  NLSDirectory: ""
+  omsServiceBacklog: "200"
+  omsSVCIAddr: "*"
+  omsSVCIPort: "7878"
+  omsServiceTimeout: "600"
+  agentip: "*"
+###################################################### UDM Config Values ############################################################################################################
+udmConfig:
+  installationDirectory: "/opt/universal/udmsrv"
+  nlsDirectory: "../nls"
+  messageLevel: "INFO"
+  security: "PAM"
+  tmpDirectory: "/var/opt/universal/tmp"
+  traceDirectory: "/var/opt/universal/trace"
+  traceFileLines: "100000"
+  traceTable: "0,never"
+  codepage: "iso8859-1"
+  umask: "026"
+  networkDelay: "120"
+  reconnectRetryCount: "20"
+  reconnectRetryInterval: "60"
+  compress: "NO,ZLIB"
+  dataSslCipherList: "AES256-GCM-SHA384,AES256-SHA,AES128-GCM-SHA256,AES128-SHA,ECDHE-RSA-AES256-GCM-SHA384,ECDHE-ECDSA-AES256-GCM-SHA384,ECDHE-RSA-AES128-GCM-SHA256,ECDHE-ECDSA-AES128-GCM-SHA256,DES-CBC3-SHA,NULL-SHA,NULL-SHA256,NULL-MD5"
+  dataSslCipherSuites: "TLS_AES_256_GCM_SHA384,TLS_CHACHA20_POLY1305_SHA256,TLS_AES_128_GCM_SHA256"
+  minSslProtocol: "TLS1_2"
+  maxSslProtocol: "TLS1_2"
+  encryptControlSession: "no"
+  verifyHostName: "no"
+  recvBufferSize: "0"
+  sendBufferSize: "0"
+  frameInterval: "100"
+  tcpRecvBuffer: "0"
+  tcpSendBuffer: "0"
+  allowReplOnRename: "no"
+  activityMonitoring: "yes"
+  eventGeneration: "x*"
+  tcpNoDelay: "yes"
+###################################################### UDM User Configuration #################################################################################################
+udmUser:
+  name: sbxfer
+  uid: 1001
+  passwordSecretName: ua-udm-users
+  passwordSecretKey: sbxfer-password
+
+###################################################### PAM Configuration ########################################################################################################
+pam:
+  createUcmd: true
+  distro: rhel   # rhel -> use system-auth; debian -> use common-auth/common-account
+
+###################################################### CA Certificates Secret Configuration ###################################################################################
+secrets:
+  caCertificates:
+    enabled: false
+    secretName: ""
+    mountPath: "/etc/ssl/certs/udm"
+    fileName: "ca-bundle.crt"
+###################################################### Service Configurations #####################################################################################################
+services:
+  uaService:
+    serviceType: ClusterIP
+    servicePort: 7878
+    targetPort: 7878
+route:
+  enabled: false  # set to true to enable Routing on OpenShift
+######################################################## Ingress Configurations ####################################################################################################
+ingress:
+  annotations: #Annotation list as follows:
+    kubernetes.io/ingress.class: nginx
+    nginx.ingress.kubernetes.io/rewrite-target: /
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+  enabled: false  
+  className: "nginx"
+  hostName: uatest.com
+  tlsSecretName: "ua-tls-secret" 
