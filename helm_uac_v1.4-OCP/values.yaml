@@ -86,8 +86,8 @@ ucConfig:
   ucTrustManagerTruststore: "properties/cacerts"
   ucTrustManagerTruststoreType: "KeyStore.getDefaultType()"
   ucTrustManagerTruststoreProvider: ""
-  ucTrustManagerTruststorePassword: "changeit"      # used only when keyVault.enabled=false
-  ucTrustManagerTruststorePasswordEncrypted: ""     # used only when keyVault.enabled=false
+  ucTrustManagerTruststorePassword: "changeit"     
+  ucTrustManagerTruststorePasswordEncrypted: ""    
 
   # OpenTelemetry
   ucOtelSdkDisabled: "false"
@@ -129,7 +129,7 @@ ucConfig:
   ucKeymanagerAlgorithm: ""
   ucKeymanagerClientAlias: ""
   ucKeymanagerKeystore: ""
-  ucKeymanagerKeystorePassword: ""   # used only when keyVault.enabled=false
+  ucKeymanagerKeystorePassword: ""   
   ucKeymanagerProvider: ""
   ucMbeanCatalinaManagerName: ""
   ucOverdueTimerStartupThreshold: "2"

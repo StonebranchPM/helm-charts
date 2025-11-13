@@ -1,6 +1,7 @@
 # Stonebranch Universal Automation Helm Charts
 
 This repository contains production-ready Helm charts for deploying Stonebranch Universal Automation components on Kubernetes platforms.
+The helm charts are still in development, for any questions or feedback contact us.
 
 ## Downloads
 
