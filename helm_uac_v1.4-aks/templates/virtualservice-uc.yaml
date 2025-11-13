@@ -1,0 +1,25 @@
+{{- if and .Values.istio.enabled (not (.Capabilities.APIVersions.Has "route.openshift.io/v1")) }}
+apiVersion: networking.istio.io/v1
+kind: VirtualService
+metadata:
+  name: '{{ .Release.Name }}-uc-vs'
+  namespace: {{ .Release.Namespace | quote }}
+spec:
+  gateways: ["{{ .Release.Name }}-uac-gateway"]
+  hosts: [{{ .Values.istio.host | quote }}]
+  http:
+  - match:
+    - uri: { prefix: "/uc/resources/metrics" }
+    route:
+    - destination:
+        host: '{{ .Release.Name }}-uc-service.{{ .Release.Namespace }}.svc.cluster.local'
+        port:
+          number: 80
+  - match:
+    - uri: { prefix: "/" }
+    route:
+    - destination:
+        host: '{{ .Release.Name }}-uc-service.{{ .Release.Namespace }}.svc.cluster.local'
+        port:
+          number: 80
+{{- end }}

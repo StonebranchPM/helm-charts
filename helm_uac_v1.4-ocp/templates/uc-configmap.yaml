@@ -1,0 +1,82 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: '{{ .Release.Name }}-uc-configmap'
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "universal-controller.labels" . | nindent 4 }}
+    app.kubernetes.io/component: uc-config
+data:
+  {{ include "uac.emitIfSet" (dict "name" "UC_SESSION_VALIDATION_REMOTE__ADDR_VALIDATE" "value" .Values.ucConfig.ucSessionValidation) | nindent 2 }}
+  {{ include "uac.emitIfSet" (dict "name" "UC_DB_RDBMS" "value" .Values.ucConfig.ucDbRdbms) | nindent 2 }}
+  {{ include "uac.emitIfSet" (dict "name" "UC_DB_URL" "value" .Values.ucConfig.ucDbUrl) | nindent 2 }}
+  {{ include "uac.emitIfSet" (dict "name" "UC_DB_USER" "value" .Values.ucConfig.ucDbUser) | nindent 2 }}
+  {{ include "uac.emitIfSet" (dict "name" "UC_NODE_TRANSIENT" "value" .Values.ucConfig.ucNodeTransient) | nindent 2 }}
+  {{ include "uac.emitIfSet" (dict "name" "UC_OMS_SERVICE_TIMEOUT" "value" .Values.ucConfig.ucOmsServiceTimeout) | nindent 2 }}
+  {{ include "uac.emitIfSet" (dict "name" "UC_NODE_HEARTBEAT_STALE__THRESHOLD__IN__SECONDS" "value" .Values.ucConfig.ucNodeHeartbeatThreshold) | nindent 2 }}
+
+  {{ include "uac.emitIfSet" (dict "name" "UC_LDAP_GROUPS_FILTER__INDIRECT" "value" .Values.ucConfig.ucLdapGroupsFilterIndirect) | nindent 2 }}
+  {{ include "uac.emitIfSet" (dict "name" "UC_LDAP_GROUPS_SINGLE__PARENT__PER__CHILD" "value" .Values.ucConfig.ucLdapGroupsSingleParent) | nindent 2 }}
+  {{ include "uac.emitIfSet" (dict "name" "UC_LDAP_GROUPS_UPDATE__MEMBERS" "value" .Values.ucConfig.ucLdapGroupsUpdateMembers) | nindent 2 }}
+  {{ include "uac.emitIfSet" (dict "name" "UC_LDAP_USERS_SYNCHRONIZE__BY__RANGE" "value" .Values.ucConfig.ucLdapUsersSyncByRange) | nindent 2 }}
+  {{ include "uac.emitIfSet" (dict "name" "UC_LDAP_USERS_SYNCHRONIZE__INDIRECT" "value" .Values.ucConfig.ucLdapUsersSyncIndirect) | nindent 2 }}
+  {{ include "uac.emitIfSet" (dict "name" "UC_LDAP_USERS_UPDATE__MEMBERSHIPS__ON__LOGIN" "value" .Values.ucConfig.ucLdapUsersUpdateMembershipsOnLogin) | nindent 2 }}
+
+  {{ include "uac.emitIfSet" (dict "name" "UC_SAML_LOG_LEVEL" "value" .Values.ucConfig.ucSamlLogLevel) | nindent 2 }}
+  {{ include "uac.emitIfSet" (dict "name" "UC_SAML_METADATA_REFRESH__INTERVAL" "value" .Values.ucConfig.ucSamlMetadataRefreshInterval) | nindent 2 }}
+  {{ include "uac.emitIfSet" (dict "name" "UC_SAML_SIGNATURE__ALGORITHM__URI" "value" .Values.ucConfig.ucSamlSignatureAlgorithm) | nindent 2 }}
+  {{ include "uac.emitIfSet" (dict "name" "UC_SAML_AUTHN__REQUEST_FORCE__AUTHN" "value" .Values.ucConfig.ucSamlAuthnRequestForceAuthn) | nindent 2 }}
+
+  {{ include "uac.emitIfSet" (dict "name" "UC_TRUSTMANAGER_TRUSTSTORE" "value" .Values.ucConfig.ucTrustManagerTruststore) | nindent 2 }}
+  {{ include "uac.emitIfSet" (dict "name" "UC_TRUSTMANAGER_TRUSTSTORE_TYPE" "value" .Values.ucConfig.ucTrustManagerTruststoreType) | nindent 2 }}
+  {{ include "uac.emitIfSet" (dict "name" "UC_TRUSTMANAGER_TRUSTSTORE_PROVIDER" "value" .Values.ucConfig.ucTrustManagerTruststoreProvider) | nindent 2 }}
+
+  {{ include "uac.emitIfSet" (dict "name" "UC_OTEL_SDK_DISABLED" "value" .Values.ucConfig.ucOtelSdkDisabled) | nindent 2 }}
+  {{ include "uac.emitIfSet" (dict "name" "UC_OTEL_TRACES_EXPORTER" "value" .Values.ucConfig.ucOtelTracesExporter) | nindent 2 }}
+  {{ include "uac.emitIfSet" (dict "name" "UC_OTEL_METRICS_EXPORTER" "value" .Values.ucConfig.ucOtelMetricsExporter) | nindent 2 }}
+  {{ include "uac.emitIfSet" (dict "name" "UC_OTEL_EXPORTER_OTLP_SERVICE_NAME" "value" .Values.ucConfig.ucOtelExporterOtlpServiceName) | nindent 2 }}
+  {{ include "uac.emitIfSet" (dict "name" "UC_OTEL_EXPORTER_OTLP_PROTOCOL" "value" .Values.ucConfig.ucOtelExporterOtlpProtocol) | nindent 2 }}
+  {{ include "uac.emitIfSet" (dict "name" "UC_OTEL_EXPORTER_OTLP_ENDPOINT" "value" .Values.ucConfig.ucOtelExporterOtlpEndpoint) | nindent 2 }}
+  {{ include "uac.emitIfSet" (dict "name" "UC_OTEL_EXPORTER_OTLP_TRACES_ENDPOINT" "value" .Values.ucConfig.ucOtelExporterOtlpTracesEndpoint) | nindent 2 }}
+  {{ include "uac.emitIfSet" (dict "name" "UC_OTEL_EXPORTER_OTLP_METRICS_ENDPOINT" "value" .Values.ucConfig.ucOtelExporterOtlpMetricsEndpoint) | nindent 2 }}
+  {{ include "uac.emitIfSet" (dict "name" "UC_OTEL_EXPORTER_OTLP_TIMEOUT" "value" .Values.ucConfig.ucOtelExporterOtlpTimeout) | nindent 2 }}
+  {{ include "uac.emitIfSet" (dict "name" "UC_OTEL_EXPORTER_OTLP_HEADERS" "value" .Values.ucConfig.ucOtelExporterOtlpHeaders) | nindent 2 }}
+  {{ include "uac.emitIfSet" (dict "name" "UC_OTEL_EXPORTER_OTLP_TRACES_HEADERS" "value" .Values.ucConfig.ucOtelExporterOtlpTracesHeaders) | nindent 2 }}
+  {{ include "uac.emitIfSet" (dict "name" "UC_OTEL_EXPORTER_OTLP_METRICS_HEADERS" "value" .Values.ucConfig.ucOtelExporterOtlpMetricHeaders) | nindent 2 }}
+  {{ include "uac.emitIfSet" (dict "name" "UC_OTEL_EXPORTER_OTLP_COMPRESSION" "value" .Values.ucConfig.ucOtelExporterOtlpCompressions) | nindent 2 }}
+  {{ include "uac.emitIfSet" (dict "name" "UC_OTEL_EXPORTER_OTLP_TRACES_COMPRESSION" "value" .Values.ucConfig.ucOtelExporterOtlpTracesCompression) | nindent 2 }}
+  {{ include "uac.emitIfSet" (dict "name" "UC_OTEL_EXPORTER_OTLP_METRICS_COMPRESSION" "value" .Values.ucConfig.ucOtelExporterOtlpMetricsCompression) | nindent 2 }}
+  {{ include "uac.emitIfSet" (dict "name" "UC_OTEL_EXPORTER_OTLP_TRACES_TIMEOUT" "value" .Values.ucConfig.ucOtelExporterOtlpTracesTimeout) | nindent 2 }}
+  {{ include "uac.emitIfSet" (dict "name" "UC_OTEL_EXPORTER_OTLP_METRICS_TIMEOUT" "value" .Values.ucConfig.ucOtelExporterOtlpMetricsTimeout) | nindent 2 }}
+  {{ include "uac.emitIfSet" (dict "name" "UC_OTEL_EXPORTER_OTLP_METRICS_TEMPORALITY_PREFERENCE" "value" .Values.ucConfig.ucOtelExporterOtlpMetricsTemporalityPreference) | nindent 2 }}
+  {{ include "uac.emitIfSet" (dict "name" "UC_OTEL_EXPORTER_OTLP_METRICS_DEFAULT_HISTOGRAM_AGGREGATION" "value" .Values.ucConfig.ucOtelExporterOtlpMetricsDefaultHistogramAggregation) | nindent 2 }}
+
+  {{ include "uac.emitIfSet" (dict "name" "UC_PROMETHEUS_METRICS_UC__HISTORY__TOTAL_OPTIONAL__LABELS" "value" .Values.ucConfig.ucPrometheusMetricsHistoryTotal) | nindent 2 }}
+  {{ include "uac.emitIfSet" (dict "name" "UC_PROMETHEUS_METRICS_UC__TASK__INSTANCE__DURATION__SECONDS_OPTIONAL__LABELS" "value" .Values.ucConfig.ucPrometheusMetricsTaskInstanceDuration) | nindent 2 }}
+  {{ include "uac.emitIfSet" (dict "name" "UC_PROMETHEUS_METRICS_UC__TASK__INSTANCE__EARLY__FINISH__TOTAL_OPTIONAL__LABELS" "value" .Values.ucConfig.ucPrometheusMetricsTaskInstanceEarlyFinish) | nindent 2 }}
+  {{ include "uac.emitIfSet" (dict "name" "UC_PROMETHEUS_METRICS_UC__TASK__INSTANCE__LATE__FINISH__TOTAL_OPTIONAL__LABELS" "value" .Values.ucConfig.ucPrometheusMetricsTaskInstanceLateFinish) | nindent 2 }}
+  {{ include "uac.emitIfSet" (dict "name" "UC_PROMETHEUS_METRICS_UC__TASK__INSTANCE__LATE__START__TOTAL_OPTIONAL__LABELS" "value" .Values.ucConfig.ucPrometheusMetricsTaskInstanceLateStart) | nindent 2 }}
+  {{ include "uac.emitIfSet" (dict "name" "UC_PROMETHEUS_METRICS_UC__TASK__INSTANCE__LAUNCH__TOTAL_OPTIONAL__LABELS" "value" .Values.ucConfig.ucPrometheusMetricsTaskInstanceLaunchTotal) | nindent 2 }}
+  {{ include "uac.emitIfSet" (dict "name" "UC_PROMETHEUS_METRICS_UC__UNIVERSAL__EVENT__TOTAL_OPTIONAL__LABELS" "value" .Values.ucConfig.ucPrometheusMetricsUniversalEventTotal) | nindent 2 }}
+  {{ include "uac.emitIfSet" (dict "name" "UC_PROMETHEUS_METRICS_UC__TASK__INSTANCE__DURATION__SECONDS_BUCKETS" "value" .Values.ucConfig.ucPrometheusMetricsTaskInstanceDurationSecondsBucket) | nindent 2 }}
+
+  {{ include "uac.emitIfSet" (dict "name" "JDK_XML_ENTITIY_EXPANSIONLIMIT" "value" .Values.ucConfig.jdkXmlEntityExpansionLimit) | nindent 2 }}
+  {{ include "uac.emitIfSet" (dict "name" "UC_DATE_FORMATS" "value" .Values.ucConfig.ucDateFormats) | nindent 2 }}
+  {{ include "uac.emitIfSet" (dict "name" "UC_LOGGING_APPENDERS" "value" .Values.ucConfig.ucLoggingAppenders) | nindent 2 }}
+  {{ include "uac.emitIfSet" (dict "name" "UC_SERVLET_PORT" "value" .Values.ucConfig.ucServletPort) | nindent 2 }}
+  {{ include "uac.emitIfSet" (dict "name" "UC_ACTION_EMAIL__NOTIFICATION_ATTACH__OUTPUT_SUBSCRIPTION_TIMEOUT__IN__SECONDS" "value" .Values.ucConfig.ucActionEmailNotificationAttachOutputSubscriptionTimeoutInSeconds) | nindent 2 }}
+  {{ include "uac.emitIfSet" (dict "name" "UC_KEYMANAGER_ALGORITHM" "value" .Values.ucConfig.ucKeymanagerAlgorithm) | nindent 2 }}
+  {{ include "uac.emitIfSet" (dict "name" "UC_KEYMANAGER_CLIENT_ALIAS" "value" .Values.ucConfig.ucKeymanagerClientAlias) | nindent 2 }}
+  {{ include "uac.emitIfSet" (dict "name" "UC_KEYMANAGER_KEYSTORE" "value" .Values.ucConfig.ucKeymanagerKeystore) | nindent 2 }}
+  {{ include "uac.emitIfSet" (dict "name" "UC_KEYMANAGER_PROVIDER" "value" .Values.ucConfig.ucKeymanagerProvider) | nindent 2 }}
+  {{ include "uac.emitIfSet" (dict "name" "UC_MBEAN_CATALINA_MANAGER_NAME" "value" .Values.ucConfig.ucMbeanCatalinaManagerName) | nindent 2 }}
+  {{ include "uac.emitIfSet" (dict "name" "UC_OVERDUE_TIMER_STARTUP_THRESHOLD" "value" .Values.ucConfig.ucOverdueTimerStartupThreshold) | nindent 2 }}
+  {{ include "uac.emitIfSet" (dict "name" "UC_TASK_SAP_RPC_TIMEOUT" "value" .Values.ucConfig.ucTaskSAPRPCTimeout) | nindent 2 }}
+  {{ include "uac.emitIfSet" (dict "name" "UC_TASK_ZOS_VIEW__EDIT_JCL_TIMEOUT" "value" .Values.ucConfig.ucTaskzosViewEditJCLTimeout) | nindent 2 }}
+  {{ include "uac.emitIfSet" (dict "name" "UC_TRUSTMANAGER_ALGORITHM" "value" .Values.ucConfig.ucTrustmanagerAlgorithm) | nindent 2 }}
+  {{ include "uac.emitIfSet" (dict "name" "UC_TRUSTMANAGER_PROVIDER" "value" .Values.ucConfig.ucTrustmanagerProvider) | nindent 2 }}
+  {{ include "uac.emitIfSet" (dict "name" "UC_TRUSTMANAGER_SSL_PROTOCOLS" "value" .Values.ucConfig.ucTrustmanagerSSLProtocols) | nindent 2 }}
+  {{ include "uac.emitIfSet" (dict "name" "UC_UI_SESSIONS__TIMEOUT" "value" .Values.ucConfig.ucUISessionsTimeout) | nindent 2 }}
+  {{ include "uac.emitIfSet" (dict "name" "UC_WEB__SERVICE_ALLOW__UNKNOWN__PROPERTIES" "value" .Values.ucConfig.ucWebServiceAllowUnknownProperties) | nindent 2 }}
+  {{ include "uac.emitIfSet" (dict "name" "UC_WEB__SERVICE_HTTPCLIENT_SOCKET_KEEP__ALIVE" "value" .Values.ucConfig.ucWebServiceHTTPClientSocketKeepAlive) | nindent 2 }}
+  {{ include "uac.emitIfSet" (dict "name" "EXTENSIONMAXBYTES" "value" .Values.ucConfig.extensionmaxbytes) | nindent 2 }}
