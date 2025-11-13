@@ -152,10 +152,9 @@ jobs:
           fi
 
       - name: Create/Update GitHub Release
-        uses: softprops/action-gh-release@v2.4.2
-        continue-on-error: true
+        uses: ncipollo/release-action@v1
         with:
-          tag_name: latest
+          tag: latest
           name: Latest Helm Charts
           body: |
             # Stonebranch Universal Automation Helm Charts
@@ -175,11 +174,9 @@ jobs:
             - Set ucDeployment.image.tag to your desired version
 
             Support: len-maurice.seemann@stonebranch.com
-          files: |
-            /tmp/charts/*.zip
-            /tmp/charts/*.tgz
-          draft: false
-          prerelease: false
-          make_latest: true
-          overwrite_files: true
-          fail_on_unmatched_files: false
+          artifacts: "/tmp/charts/*.zip,/tmp/charts/*.tgz"
+          allowUpdates: true
+          removeArtifacts: true
+          replacesArtifacts: true
+          makeLatest: true
+          token: ${{ secrets.GITHUB_TOKEN }}
