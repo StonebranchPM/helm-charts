@@ -38,7 +38,6 @@ jobs:
           set -euo pipefail
 
           # Discover chart directories automatically:
-          # any directory in repo root named helm_ua_* or helm_uac_* with a Chart.yaml
           CHARTS=()
           for dir in helm_ua_* helm_uac_*; do
             if [ -d "$dir" ] && [ -f "$dir/Chart.yaml" ]; then
@@ -53,7 +52,7 @@ jobs:
             echo "WARNING: No Helm chart directories found (helm_ua_*/helm_uac_* with Chart.yaml)."
           fi
 
-          # Relaxed yamllint config: style issues are warnings, not fatal
+          # Relaxed yamllint config
           YAMLLINT_CONF='{extends: default,
             rules: {
               line-length: {max: 200, level: warning},
@@ -76,7 +75,6 @@ jobs:
             helm lint "$chart"
 
             echo "Rendering templates for $chart..."
-            # Use a safe release name (lowercase, no underscores, only [a-z0-9-])
             BASENAME="$(basename "$chart")"
             RELEASE_NAME="$(printf '%s' "$BASENAME" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9-]/-/g')"
             helm template "$RELEASE_NAME" "$chart" > /dev/null
@@ -88,10 +86,9 @@ jobs:
 
           WORKDIR="$(pwd)"
           TMP_DIR="/tmp/charts"
-
           mkdir -p "$TMP_DIR"
 
-          # Discover chart directories again (same pattern)
+          # Discover charts for packaging
           CHARTS=()
           for dir in helm_ua_* helm_uac_*; do
             if [ -d "$dir" ] && [ -f "$dir/Chart.yaml" ]; then
@@ -103,10 +100,10 @@ jobs:
           printf '  - %s\n' "${CHARTS[@]:-<none>}"
 
           if [ "${#CHARTS[@]}" -eq 0 ]; then
-            echo "WARNING: No Helm chart directories found (helm_ua_*/helm_uac_* with Chart.yaml)."
+            echo "WARNING: No Helm chart directories found."
           fi
 
-          # UAC chart detection by naming convention (helm_uac_*)
+          # UAC chart detection
           is_uac_chart() {
             case "$(basename "$1")" in
               helm_uac_*) return 0 ;;
@@ -117,40 +114,29 @@ jobs:
           for chart in "${CHARTS[@]}"; do
             echo "Processing $chart..."
 
-            if [ ! -d "$WORKDIR/$chart" ]; then
-              echo "  WARNING: $chart directory not found, skipping"
-              continue
-            fi
-
-            # Copy chart to temp dir so repo content is untouched
             cp -r "$WORKDIR/$chart" "$TMP_DIR/$chart"
 
-            # Strip private image refs for UAC charts in the temp copy
             if is_uac_chart "$chart"; then
               VALUES_FILE="$TMP_DIR/$chart/values.yaml"
               if [ -f "$VALUES_FILE" ]; then
                 echo "  Removing private image references from $VALUES_FILE"
-
                 sed -i '/^############################################ UC Deployment/a # REQUIRED: Provide your Universal Controller image repository and tag below' "$VALUES_FILE"
                 sed -i '/^ucDeployment:/,/^[^ ]/ s/^\(\s*repository:\s*\).*/\1""/' "$VALUES_FILE"
                 sed -i '/^ucDeployment:/,/^[^ ]/ s/^\(\s*tag:\s*\).*/\1""/' "$VALUES_FILE"
-              else
-                echo "  WARNING: $VALUES_FILE not found, skipping UAC modification"
               fi
             fi
 
             BASENAME="$(basename "$chart")"
 
-            # Create ZIP (uses directory name, e.g. helm_ua_v1.5-aks.zip)
+            # ZIP packaging
             (
               cd "$TMP_DIR"
               zip -9 -r "${BASENAME}.zip" "${BASENAME}" > /dev/null
             )
-            echo "  Created ${TMP_DIR}/${BASENAME}.zip"
+            echo "Created ${TMP_DIR}/${BASENAME}.zip"
 
-            # Create Helm package (.tgz) using Chart.yaml name/version
-            # File name will be {name}-{version}.tgz from Chart.yaml
-            echo "  Creating Helm package for $chart..."
+            # Helm package (.tgz)
+            echo "Creating Helm package for $chart..."
             helm package "$TMP_DIR/$chart" -d "$TMP_DIR" > /dev/null
           done
 
@@ -170,6 +156,7 @@ jobs:
         with:
           tag_name: latest
           name: Latest Helm Charts
+          overwrite: true
           body: |
             # Stonebranch Universal Automation Helm Charts
 
@@ -185,7 +172,7 @@ jobs:
             - **helm_uac_v1.4-aks.zip** + corresponding **.tgz** Helm package
             - **helm_uac_v1.4-ocp.zip** + corresponding **.tgz** Helm package
 
-            **⚠️ Important:** UAC charts require you to provide your own Universal Controller image details in `values.yaml`:
+            ** Important:** UAC charts require you to provide your own Universal Controller image details in `values.yaml`:
             - Set `ucDeployment.image.repository` to your controller image repository
             - Set `ucDeployment.image.tag` to your desired version
 
@@ -194,21 +181,16 @@ jobs:
             ### Option A – Download and edit locally (ZIP)
             1. Download the appropriate **.zip** file for your platform
             2. Extract the chart: `unzip <chart-name>.zip`
-            3. Review and customize `values.yaml` according to your environment
+            3. Review and customize `values.yaml`
             4. Install using Helm: `helm install <release-name> ./<chart-directory>`
 
             ### Option B – Use Helm package (TGZ)
             1. Download the appropriate **.tgz** file
-            2. (Optional) Inspect contents:
-               - Extract: `tar -xzf <chart-package>.tgz`
-               - Or view default values: `helm show values <chart-package>.tgz`
-            3. Install using Helm:
-               - `helm install <release-name> <chart-package>.tgz`
-                 (or from the extracted directory, as usual)
+            2. Optional: inspect values with `helm show values <package>.tgz`
+            3. Install using Helm: `helm install <release-name> <package>.tgz`
 
             ## Support
-
-            For questions or issues, contact: len-maurice.seemann@stonebranch.com
+            len-maurice.seemann@stonebranch.com
           files: |
             /tmp/charts/*.zip
             /tmp/charts/*.tgz

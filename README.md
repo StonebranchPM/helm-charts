@@ -18,7 +18,7 @@ Pre-packaged Helm charts are available as ZIP files in the [**GitHub Releases**]
 - **helm_uac_v1.4-AKS.zip** - Universal Controller + Agent v1.4 for Azure Kubernetes Service
 - **helm_uac_v1.4-OCP.zip** - Universal Controller + Agent v1.4 for OpenShift Container Platform
 
-> **⚠️ Important:** UAC (Universal Controller) charts require you to provide your own Universal Controller image details in `values.yaml` before deployment:
+> ** Important:** UAC (Universal Controller) charts require you to provide your own Universal Controller image details in `values.yaml` before deployment:
 > - Set `ucDeployment.image.repository` to your controller image repository
 > - Set `ucDeployment.image.tag` to your desired version tag
 
@@ -162,14 +162,6 @@ For questions, issues, or feature requests:
 └── README.md
 ```
 
-### Automated Releases
-
-Charts are automatically packaged and published on every push to `main`. The workflow:
-1. Copies all chart directories
-2. Sanitizes UAC charts (removes private image references)
-3. Creates ZIP files
-4. Publishes to GitHub Releases under the `latest` tag
-
 ---
 
-**© 2024 Stonebranch - Universal Automation Center**
+**© 2025 Stonebranch - Universal Automation Center**
