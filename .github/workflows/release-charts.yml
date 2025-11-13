@@ -76,7 +76,10 @@ jobs:
             helm lint "$chart"
 
             echo "Rendering templates for $chart..."
-            helm template "$chart" "$chart" > /dev/null
+            # Use a safe release name (lowercase, no underscores, only [a-z0-9-])
+            BASENAME="$(basename "$chart")"
+            RELEASE_NAME="$(printf '%s' "$BASENAME" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9-]/-/g')"
+            helm template "$RELEASE_NAME" "$chart" > /dev/null
           done
 
       - name: Prepare chart packages (ZIP + Helm TGZ)
