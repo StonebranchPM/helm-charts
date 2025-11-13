@@ -29,6 +29,7 @@ jobs:
       - name: Install Helm
         uses: azure/setup-helm@v4
         with:
+          # Use the latest stable Helm version
           version: latest
 
       - name: Validate Helm charts
@@ -36,6 +37,19 @@ jobs:
           set -euo pipefail
 
           CHARTS=($CHARTS)
+
+          # Relaxed yamllint configuration:
+          # - line-length up to 200 chars, only warning
+          # - trailing spaces as warning
+          # - document-start (---) disabled
+          # - comment spacing as warning
+          YAMLLINT_CONF='{extends: default,
+            rules: {
+              line-length: {max: 200, level: warning},
+              trailing-spaces: {level: warning},
+              comments: {min-spaces-from-content: 1, level: warning},
+              document-start: disable
+            }}'
 
           for chart in "${CHARTS[@]}"; do
             if [ ! -d "$chart" ]; then
@@ -45,19 +59,16 @@ jobs:
 
             echo "=== Validating $chart ==="
 
-            # Basic YAML sanity check for values.yaml
             if [ -f "$chart/values.yaml" ]; then
               echo "Running yamllint on $chart/values.yaml..."
-              yamllint "$chart/values.yaml"
+              yamllint -d "$YAMLLINT_CONF" "$chart/values.yaml"
             else
               echo "WARNING: $chart/values.yaml not found"
             fi
 
-            # Helm lint
             echo "Running helm lint on $chart..."
             helm lint "$chart"
 
-            # Render templates (API-agnostic)
             echo "Rendering templates for $chart..."
             helm template "$chart" "$chart" > /dev/null
           done

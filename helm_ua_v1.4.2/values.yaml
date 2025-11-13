@@ -1,19 +1,5 @@
-#################################################################################################
-#
-#  Universal Controller OpenShift Deployment
-#  
-#  Description
-#  The helm chart related to this values.yaml file
-#  deploys a Universal Agent incl. a given Namespace
-#  The following PODs will be deployed: 
-#  - Universal Agent 
-#  
-#  v1.3.0 - 2025-09-01 - Changed from setting value.namespace to using .Release.Namespace
-#                      - Added Creation of PVC if not already existing
-#                      - PVC mounting issue resolved in deployment.yaml
-#################################################################################################
-
-###################################################### Node Selector Configuration ############################################################################################
+# UA Helm Chart Values File
+# Node Selector Configuration 
 nodeSelector:
   kubernetes.io/os: linux
   agentpool: sbnodepool
@@ -21,7 +7,7 @@ nodeSelector:
 tolerations: []
 
 nodeAffinity: {}
-###################################################### Universal Agent Deployment Configuration ####################################################################################
+# Universal Agent Deployment Configuration
 uaDeployment:
   replicas: 1
   containerName: universal-agent
@@ -39,8 +25,7 @@ uaDeployment:
     persistentVolumeName: "" # only if creating a new PVC, leave empty to let k8s create a PV, mutually exclusive with storageClassName
     volumeMode: Filesystem # oder Block
   
-###################################################### UA Config Values ###########################################################################################################
-uaConfig:
+# UA Config Values 
   uagTransient: "yes"
   uagSNIHostname: ""  #PORT@HOSTNAME:SNI_HOSTNAME
   omsServers: "7878@127.0.0.1"
@@ -113,7 +98,7 @@ uaConfig:
   omsSVCIPort: "7878"
   omsServiceTimeout: "600"
   agentip: "*"
-###################################################### UDM Config Values ############################################################################################################
+# UDM Config Values 
 udmConfig:
   installationDirectory: "/opt/universal/udmsrv"
   nlsDirectory: "../nls"
@@ -144,26 +129,25 @@ udmConfig:
   activityMonitoring: "yes"
   eventGeneration: "x*"
   tcpNoDelay: "yes"
-###################################################### UDM User Configuration #################################################################################################
+# UDM User Configuration
 udmUser:
   name: sbxfer
   uid: 1001
   passwordSecretName: ua-udm-users
   passwordSecretKey: sbxfer-password
 
-###################################################### PAM Configuration ########################################################################################################
+# PAM Configuration
 pam:
   createUcmd: true
   distro: rhel   # rhel -> use system-auth; debian -> use common-auth/common-account
 
-###################################################### CA Certificates Secret Configuration ###################################################################################
-secrets:
+# CA Certificates Secret Configuration
   caCertificates:
     enabled: false
     secretName: ""
     mountPath: "/etc/ssl/certs/udm"
     fileName: "ca-bundle.crt"
-###################################################### Service Configurations #####################################################################################################
+# Service Configurations
 services:
   uaService:
     serviceType: ClusterIP
@@ -171,7 +155,7 @@ services:
     targetPort: 7878
 route:
   enabled: false  # set to true to enable Routing on OpenShift
-######################################################## Ingress Configurations ####################################################################################################
+# Ingress Configurations 
 ingress:
   annotations: #Annotation list as follows:
     kubernetes.io/ingress.class: nginx
