@@ -12,11 +12,59 @@ jobs:
   release-charts:
     runs-on: ubuntu-latest
 
+    env:
+      CHARTS: "helm_ua_v1.4.2 helm_ua_v1.5-AKS helm_ua_v1.5-OCP helm_uac_v1.4-AKS helm_uac_v1.4-OCP"
+      UAC_CHARTS: "helm_uac_v1.4-AKS helm_uac_v1.4-OCP"
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Prepare chart packages
+      - name: Install dependencies (zip, yamllint)
+        run: |
+          set -euo pipefail
+          sudo apt-get update
+          sudo apt-get install -y zip yamllint
+
+      - name: Install Helm
+        uses: azure/setup-helm@v4
+        with:
+          # Leave empty for latest stable, or pin if you like:
+          # version: v3.16.1
+          version: ''
+
+      - name: Validate Helm charts
+        run: |
+          set -euo pipefail
+
+          CHARTS=($CHARTS)
+
+          for chart in "${CHARTS[@]}"; do
+            if [ ! -d "$chart" ]; then
+              echo "WARNING: $chart directory not found, skipping validation"
+              continue
+            fi
+
+            echo "=== Validating $chart ==="
+
+            # Basic YAML sanity check for values.yaml
+            if [ -f "$chart/values.yaml" ]; then
+              echo "Running yamllint on $chart/values.yaml..."
+              yamllint "$chart/values.yaml"
+            else
+              echo "WARNING: $chart/values.yaml not found"
+            fi
+
+            # Helm lint
+            echo "Running helm lint on $chart..."
+            helm lint "$chart"
+
+            # Render templates (API-agnostic)
+            echo "Rendering templates for $chart..."
+            helm template "$chart" "$chart" > /dev/null
+          done
+
+      - name: Prepare chart packages (ZIP + Helm TGZ)
         run: |
           set -euo pipefail
 
@@ -25,11 +73,18 @@ jobs:
 
           mkdir -p "$TMP_DIR"
 
-          # List of all chart directories
-          CHARTS=("helm_ua_v1.4.2" "helm_ua_v1.5-AKS" "helm_ua_v1.5-OCP" "helm_uac_v1.4-AKS" "helm_uac_v1.4-OCP")
+          CHARTS=($CHARTS)
+          UAC_CHARTS=($UAC_CHARTS)
 
-          # UAC charts that need private image references removed
-          UAC_CHARTS=("helm_uac_v1.4-AKS" "helm_uac_v1.4-OCP")
+          is_uac_chart() {
+            local chart_name="$1"
+            for uac in "${UAC_CHARTS[@]}"; do
+              if [[ "$uac" == "$chart_name" ]]; then
+                return 0
+              fi
+            done
+            return 1
+          }
 
           for chart in "${CHARTS[@]}"; do
             echo "Processing $chart..."
@@ -39,32 +94,49 @@ jobs:
               continue
             fi
 
-            # Copy chart to temp directory
+            # Copy chart to temp directory so we don't modify repo files
             cp -r "$WORKDIR/$chart" "$TMP_DIR/$chart"
 
-            # Check if this is a UAC chart
-            if [[ " ${UAC_CHARTS[*]} " == *" ${chart} "* ]]; then
+            # If this is a UAC chart, strip private image refs in the temp copy
+            if is_uac_chart "$chart"; then
               VALUES_FILE="$TMP_DIR/$chart/values.yaml"
-              echo "  Removing private image references from $VALUES_FILE"
+              if [ -f "$VALUES_FILE" ]; then
+                echo "  Removing private image references from $VALUES_FILE"
 
-              # Add comment before ucDeployment section
-              sed -i '/^############################################ UC Deployment/a # REQUIRED: Provide your Universal Controller image repository and tag below' "$VALUES_FILE"
+                # Add comment before ucDeployment section
+                sed -i '/^############################################ UC Deployment/a # REQUIRED: Provide your Universal Controller image repository and tag below' "$VALUES_FILE"
 
-              # Make repository and tag generic (no hard-coded image or tag) - scoped to ucDeployment block only
-              sed -i '/^ucDeployment:/,/^[^ ]/ s/^\(\s*repository:\s*\).*/\1""/' "$VALUES_FILE"
-              sed -i '/^ucDeployment:/,/^[^ ]/ s/^\(\s*tag:\s*\).*/\1""/' "$VALUES_FILE"
+                # Make repository and tag generic (no hard-coded image or tag) - scoped to ucDeployment block only
+                sed -i '/^ucDeployment:/,/^[^ ]/ s/^\(\s*repository:\s*\).*/\1""/' "$VALUES_FILE"
+                sed -i '/^ucDeployment:/,/^[^ ]/ s/^\(\s*tag:\s*\).*/\1""/' "$VALUES_FILE"
+              else
+                echo "  WARNING: $VALUES_FILE not found, skipping UAC modification"
+              fi
             fi
 
-            # Create ZIP file (subshell so we don't change the main working dir)
+            # Create ZIP file (for users who want to just download & edit)
             (
               cd "$TMP_DIR"
               zip -9 -r "${chart}.zip" "$chart" > /dev/null
             )
             echo "  Created ${TMP_DIR}/${chart}.zip"
+
+            # Create proper Helm package (.tgz) from the temp copy
+            # This uses name/version from Chart.yaml
+            echo "  Creating Helm package for $chart..."
+            helm package "$TMP_DIR/$chart" -d "$TMP_DIR" > /dev/null
           done
 
-          # List created ZIPs
-          ls -lh "$TMP_DIR"/*.zip
+          echo "=== Packaged files ==="
+          ls -lh "$TMP_DIR"
+
+      - name: Ensure charts were packaged
+        run: |
+          set -euo pipefail
+          if ! ls /tmp/charts/*.zip >/dev/null 2>&1 && ! ls /tmp/charts/*.tgz >/dev/null 2>&1; then
+            echo "ERROR: No chart packages were created."
+            exit 1
+          fi
 
       - name: Create/Update GitHub Release
         uses: softprops/action-gh-release@v2
@@ -79,30 +151,41 @@ jobs:
             ## Available Charts
 
             ### Universal Agent Charts (Ready to Use)
-            - **helm_ua_v1.4.2.zip** - Universal Agent v1.4.2 (generic deployment)
-            - **helm_ua_v1.5-AKS.zip** - Universal Agent v1.5 for Azure Kubernetes Service
-            - **helm_ua_v1.5-OCP.zip** - Universal Agent v1.5 for OpenShift Container Platform
+            - **helm_ua_v1.4.2.zip** / **.tgz** - Universal Agent v1.4.2 (generic deployment)
+            - **helm_ua_v1.5-AKS.zip** / **.tgz** - Universal Agent v1.5 for Azure Kubernetes Service
+            - **helm_ua_v1.5-OCP.zip** / **.tgz** - Universal Agent v1.5 for OpenShift Container Platform
 
             ### Universal Controller + Agent Charts (Requires Configuration)
-            - **helm_uac_v1.4-AKS.zip** - Universal Controller + Agent v1.4 for AKS
-            - **helm_uac_v1.4-OCP.zip** - Universal Controller + Agent v1.4 for OpenShift
+            - **helm_uac_v1.4-AKS.zip** / **.tgz** - Universal Controller + Agent v1.4 for AKS
+            - **helm_uac_v1.4-OCP.zip** / **.tgz** - Universal Controller + Agent v1.4 for OpenShift
 
             **⚠️ Important:** UAC charts require you to provide your own Universal Controller image details in `values.yaml`:
             - Set `ucDeployment.image.repository` to your controller image repository
             - Set `ucDeployment.image.tag` to your desired version
 
-            ## Installation
+            ## How to Use
 
-            1. Download the appropriate ZIP file for your platform
+            ### Option A – Download and edit locally (ZIP)
+            1. Download the appropriate **.zip** file for your platform
             2. Extract the chart: `unzip <chart-name>.zip`
             3. Review and customize `values.yaml` according to your environment
             4. Install using Helm: `helm install <release-name> ./<chart-directory>`
+
+            ### Option B – Use Helm package (TGZ)
+            1. Download the appropriate **.tgz** file
+            2. (Optional) Inspect contents:
+               - Extract: `tar -xzf <chart-package>.tgz`
+               - Or view default values: `helm show values <chart-package>.tgz`
+            3. Install using Helm:
+               - `helm install <release-name> <chart-package>.tgz`
+                 (or from the extracted directory, as usual)
 
             ## Support
 
             For questions or issues, contact: len-maurice.seemann@stonebranch.com
           files: |
             /tmp/charts/*.zip
+            /tmp/charts/*.tgz
           draft: false
           prerelease: false
           make_latest: true
