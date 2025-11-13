@@ -161,19 +161,47 @@ jobs:
 
             This release contains the latest versions of Helm charts for deploying Stonebranch Universal Automation components on Kubernetes.
 
-            Available Charts:
+            ## Available Charts
 
-            - helm_ua_v1.5-aks.zip and corresponding .tgz Helm package
-            - helm_ua_v1.5-ocp.zip and corresponding .tgz Helm package
-            - helm_uac_v1.4-aks.zip and corresponding .tgz Helm package
-            - helm_uac_v1.4-ocp.zip and corresponding .tgz Helm package
+            - helm_ua_v1.5-aks.zip and corresponding ua-aks-1.5.0.tgz Helm package
+            - helm_ua_v1.5-ocp.zip and corresponding ua-ocp-1.5.0.tgz Helm package
+            - helm_uac_v1.4-aks.zip and corresponding uc-aks-1.4.0.tgz Helm package
+            - helm_uac_v1.4-ocp.zip and corresponding uc-ocp-1.4.0.tgz Helm package
 
-            Important:
-            UAC charts require you to provide your own Universal Controller image details in values.yaml:
-            - Set ucDeployment.image.repository to your controller image repository
-            - Set ucDeployment.image.tag to your desired version
+            ## How to Install
 
-            Support: len-maurice.seemann@stonebranch.com
+            ### Option A – From ZIP (editable chart directory)
+
+            1. Download the appropriate ZIP file from this release, for example:
+               - helm_ua_v1.5-aks.zip
+            2. Extract the archive:
+               - unzip helm_ua_v1.5-aks.zip
+               - cd helm_ua_v1.5-aks
+            3. Review and customize values.yaml according to your environment.
+            4. Install the chart:
+               - helm install <release-name> . -n stonebranch --create-namespace
+
+            ### Option B – From Helm package (.tgz)
+
+            1. Download the appropriate .tgz file from this release, for example:
+               - ua-aks-1.5.0.tgz
+            2. Optional: inspect default values:
+               - helm show values ua-aks-1.5.0.tgz
+            3. Install the chart directly from the package:
+               - helm install <release-name> ua-aks-1.5.0.tgz -n stonebranch --create-namespace
+
+            ## UAC Image Configuration (Required)
+
+            For Universal Controller + OMS (UAC) charts, you must provide your own Universal Controller image details in values.yaml before installation:
+
+            ucDeployment:
+              image:
+                repository: "<your-controller-image-repository>"
+                tag: "<your-controller-image-tag>"
+
+            ## Support
+
+            For questions or issues, contact: len-maurice.seemann@stonebranch.com
           artifacts: "/tmp/charts/*.zip,/tmp/charts/*.tgz"
           allowUpdates: true
           removeArtifacts: true
