@@ -18,7 +18,7 @@ spec:
     termination: passthrough
     insecureEdgeTerminationPolicy: None
 ---
-{{- if .Values.uaConfig.omsAutostart "yes" }}
+{{- if eq .Values.uaConfig.omsAutoStart "yes" }}
 apiVersion: route.openshift.io/v1
 kind: Route
 metadata:

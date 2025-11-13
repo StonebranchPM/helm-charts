@@ -16,7 +16,7 @@ spec:
       targetPort: 7887
       protocol: TCP
 ---
-{{- if .Values.uaConfig.omsAutostart "yes" }}
+{{- if eq .Values.uaConfig.omsAutoStart "yes" }}
 apiVersion: v1
 kind: Service
 metadata:
