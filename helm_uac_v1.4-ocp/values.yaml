@@ -51,8 +51,9 @@ tlssnihostnameref:
 ucConfig:
   ucDbRdbms: "mysql"
   ucDbUrl: "jdbc:mysql://mysql-service:3306/"
+  ucDbName: "" #To implement in configmap
   ucDbUser: "root"
-  ucDbPassword: "rootpassword"   # used only when keyVault.enabled=false
+  ucDbPassword: "rootpassword"   
   ucNodeTransient: true
   ucOmsServiceTimeout: 30
   ucNodeHeartbeatThreshold: 30
