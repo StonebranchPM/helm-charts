@@ -1,12 +1,12 @@
 name: Helm Charts CI + Release
 
 on:
-  push:          # run on ANY branch push
+  push:
     branches:
-      - '**'
-  pull_request:  # run on PRs targeting main
+      - '**'          # run on all branches
+  pull_request:
     branches:
-      - main
+      - main          # validate on PRs into main
 
 permissions:
   contents: write
@@ -40,6 +40,7 @@ jobs:
         run: |
           set -euo pipefail
 
+          # Discover chart directories automatically
           CHARTS=()
           for dir in helm_ua_* helm_uac_*; do
             if [ -d "$dir" ] && [ -f "$dir/Chart.yaml" ]; then
@@ -54,6 +55,7 @@ jobs:
             echo "WARNING: No Helm chart directories found (helm_ua_*/helm_uac_* with Chart.yaml)."
           fi
 
+          # Relaxed yamllint config
           YAMLLINT_CONF='{extends: default,
             rules: {
               line-length: {max: 200, level: warning},
@@ -77,57 +79,4 @@ jobs:
 
             echo "Rendering templates for $chart..."
             BASENAME="$(basename "$chart")"
-            RELEASE_NAME="$(printf '%s' "$BASENAME" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9-]/-/g')"
-            helm template "$RELEASE_NAME" "$chart" > /dev/null
-          done
-
-  release-charts:
-    needs: validate-charts
-    runs-on: ubuntu-latest
-    # Only run this job for pushes to main (not PRs, not dev)
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'  # 
-
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Install dependencies (zip, yamllint)
-        run: |
-          set -euo pipefail
-          sudo apt-get update
-          sudo apt-get install -y zip yamllint
-
-      - name: Install Helm
-        uses: azure/setup-helm@v4
-        with:
-          version: latest
-
-      - name: Prepare chart packages (ZIP + Helm TGZ)
-        run: |
-          # ... your existing packaging logic here ...
-          # (unchanged from your current workflow)
-          echo "Packaging charts..."
-          # [snip] copy your existing script
-
-      - name: Ensure charts were packaged
-        run: |
-          set -euo pipefail
-          if ! ls /tmp/charts/*.zip >/dev/null 2>&1 && ! ls /tmp/charts/*.tgz >/dev/null 2>&1; then
-            echo "ERROR: No chart packages were created."
-            exit 1
-          fi
-
-      - name: Create/Update GitHub Release
-        uses: ncipollo/release-action@v1
-        with:
-          tag: latest
-          name: Latest Helm Charts
-          body: |
-            # Stonebranch Universal Automation Helm Charts
-            ...
-          artifacts: "/tmp/charts/*.zip,/tmp/charts/*.tgz"
-          allowUpdates: true
-          removeArtifacts: true
-          replacesArtifacts: true
-          makeLatest: true
-          token: ${{ secrets.GITHUB_TOKEN }}
+            RELEASE_NAME="$(printf '%s' "$_
