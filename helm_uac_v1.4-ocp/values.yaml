@@ -1,7 +1,8 @@
 #################################################################################################
 # UAC Helm Deployment
 #################################################################################################
-
+route:
+  enabled: true
 oms:
   enabled: true
   persistentVolume: #Using established persistent volume
@@ -50,10 +51,11 @@ tlssnihostnameref:
 ############################################ UC ConfigMap values ######################################
 ucConfig:
   ucDbRdbms: "mysql"
-  ucDbUrl: "jdbc:mysql://mysql-service:3306/"
-  ucDbName: "" #To implement in configmap
+  ucDbUrl: "jdbc:mysql://9.141.140.203:3306/"
+  ucDbName: "sb_test"
   ucDbUser: "root"
-  ucDbPassword: "rootpassword"   
+  ucDbPassword: "rootpassword"
+
   ucNodeTransient: true
   ucOmsServiceTimeout: 30
   ucNodeHeartbeatThreshold: 30

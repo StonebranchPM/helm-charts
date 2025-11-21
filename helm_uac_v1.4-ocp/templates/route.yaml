@@ -1,4 +1,4 @@
-{{- if .Values.omsDeployment.enabled }}
+{{- if and .Values.oms.enabled .Values.route.enabled }}
 apiVersion: route.openshift.io/v1
 kind: Route
 metadata:
@@ -16,7 +16,7 @@ spec:
     insecureEdgeTerminationPolicy: None
 {{- end }}
 ---
-{{- if .Values.omsDeployment.enabled }}
+{{- if and .Values.oms.enabled .Values.route.enabled }}
 apiVersion: route.openshift.io/v1
 kind: Route
 metadata:
