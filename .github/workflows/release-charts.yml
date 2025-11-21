@@ -38,7 +38,8 @@ jobs:
 
       - name: Validate Helm charts
         run: |
-          set -euo pipefail
+          set -uo pipefail   # no -e here, we will track failures manually
+          set -x             # show commands for easier debugging
 
           # Discover chart directories automatically
           CHARTS=()
@@ -70,24 +71,42 @@ jobs:
             document-start: disable
           EOF
 
+          FAIL=0
+
           for chart in "${CHARTS[@]}"; do
             echo "=== Validating $chart ==="
 
             if [ -f "$chart/values.yaml" ]; then
               echo "Running yamllint on $chart/values.yaml..."
-              yamllint -d "$YAMLLINT_CONF" "$chart/values.yaml"
+              # If you want yamllint to be non-fatal, use '|| true' instead of setting FAIL
+              if ! yamllint -d "$YAMLLINT_CONF" "$chart/values.yaml"; then
+                echo "ERROR: yamllint failed for $chart/values.yaml"
+                FAIL=1
+              fi
             else
               echo "WARNING: $chart/values.yaml not found"
             fi
 
             echo "Running helm lint on $chart..."
-            helm lint "$chart"
+            if ! helm lint "$chart"; then
+              echo "ERROR: helm lint failed for $chart"
+              FAIL=1
+            fi
 
             echo "Rendering templates for $chart..."
             BASENAME="$(basename "$chart")"
             RELEASE_NAME="$(printf '%s' "$BASENAME" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9-]/-/g')"
-            helm template "$RELEASE_NAME" "$chart" > /dev/null
+
+            if ! helm template "$RELEASE_NAME" "$chart" > /dev/null; then
+              echo "ERROR: helm template failed for $chart"
+              FAIL=1
+            fi
           done
+
+          if [ "$FAIL" -ne 0 ]; then
+            echo "One or more charts failed validation."
+            exit 1
+          fi
 
   release-charts:
     needs: validate-charts
@@ -97,7 +116,7 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+      uses: actions/checkout@v4
 
       - name: Install dependencies (zip, yamllint)
         run: |
@@ -199,7 +218,7 @@ jobs:
             - helm_ua_v1.5-aks.zip and corresponding ua-aks-1.5.0.tgz Helm package
             - helm_ua_v1.5-ocp.zip and corresponding ua-ocp-1.5.0.tgz Helm package
             - helm_uac_v1.4-aks.zip and corresponding uc-aks-1.4.0.tgz Helm package
-            - helm_uac_v1.4-ocp.zip and corresponding uc-ocp-1.4.0.tgz Helm package
+            - helm_uac_v1.4.1-ocp.zip and corresponding uc-ocp-1.4.1.tgz Helm package
 
             ## How to Install
 
