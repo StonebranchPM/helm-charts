@@ -55,21 +55,8 @@ jobs:
             echo "WARNING: No Helm chart directories found (helm_ua_*/helm_uac_* with Chart.yaml)."
           fi
 
-          # Relaxed yamllint config via heredoc -> cat (avoids read -d '' + set -e issue)
-          YAMLLINT_CONF=$(cat << 'EOF'
-extends: default
-rules:
-  line-length:
-    max: 200
-    level: warning
-  trailing-spaces:
-    level: warning
-  comments:
-    min-spaces-from-content: 1
-    level: warning
-  document-start: disable
-EOF
-)
+          # Relaxed yamllint config (single-line, no fancy quoting)
+          YAMLLINT_CONF='{extends: default, rules: {line-length: {max: 200, level: warning}, trailing-spaces: {level: warning}, comments: {min-spaces-from-content: 1, level: warning}, document-start: disable}}'
 
           for chart in "${CHARTS[@]}"; do
             echo "=== Validating $chart ==="
