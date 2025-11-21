@@ -51,7 +51,7 @@ tlssnihostnameref:
 ############################################ UC ConfigMap values ######################################
 ucConfig:
   ucDbRdbms: "mysql"
-  ucDbUrl: "jdbc:mysql://9.141.140.203:3306/"
+  ucDbUrl: "jdbc:mysql://mysqlservice3:3306/"
   ucDbName: "sb_test"
   ucDbUser: "root"
   ucDbPassword: "rootpassword"
