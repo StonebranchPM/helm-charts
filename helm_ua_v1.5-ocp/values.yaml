@@ -22,7 +22,7 @@ uaDeployment:
       memory: "1Gi"
       cpu: "1000m"
   storageRequest: 1Gi
-  storageClassName: "local-sc"
+  storageClassName: ""
   accessMode: ReadWriteOnce
 
 persistentVolume:
@@ -34,14 +34,14 @@ tlssnihostnameref:
 ############################################ OMS ConfigMap values #####################################
 uaConfig:
   # ------- UAG -------
-  uagagentclusters: "OpenShift"
+  uagagentclusters: ""
   businessservices: ""
   extensionacceptlist: ""
   extensioncanceltimeout: ""
   extensiondeployonregistration: ""
   extensionpythonlist: ""
-  netname: "OCP-Agent"
-  omsServers: "ps1.stonebranchdev.cloud"
+  netname: ""
+  omsServers: ""
   processcanceltimeout: ""
   uagAutostart: "yes"
   uagLoglvl: ""

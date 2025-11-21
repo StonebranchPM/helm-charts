@@ -14,8 +14,8 @@ ucDeployment:
   imagePullSecrets:
     enabled: true
   image:
-    repository: nilsbuer/universal-controller
-    tag: 7.9.0.0
+    repository: 
+    tag: 
   resources:
     requests:
       memory: "1Gi"
@@ -39,7 +39,7 @@ omsDeployment:
       memory: "128Mi"
       cpu: "1m"
   storageRequest: 1Gi
-  storageClassName: "local-sc"
+  storageClassName: ""
   accessMode: ReadWriteOnce
 
 persistentVolume:

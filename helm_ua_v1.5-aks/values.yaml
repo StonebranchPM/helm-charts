@@ -9,8 +9,8 @@ UA:
 ############################################ Istio #####################################################
 istio:
   enabled: true
-  host: "akspresales.stonebranchdev.cloud"
-  hostCredentials: "akspresales-letsencrypt-tls"
+  host: ""
+  hostCredentials: ""
   TLSProtocol: "TLSV1_2"
   udmConnectionPort: 446
   udmConnectionPortInternal: 15446
@@ -39,14 +39,14 @@ persistentVolume:
 ############################################ OMS ConfigMap values #####################################
 uaConfig:
   # ------- UAG -------
-  uagagentclusters: "Agent-K8s"
-  businessservices: "k8s"
+  uagagentclusters: ""
+  businessservices: ""
   extensionacceptlist: ""
   extensioncanceltimeout: ""
   extensiondeployonregistration: ""
   extensionpythonlist: ""
-  netname: "AKS-Agent"
-  omsServers: "ps2.stonebranchdev.cloud"
+  netname: ""
+  omsServers: ""
   processcanceltimeout: ""
   uagAutostart: "yes"
   uagLoglvl: ""

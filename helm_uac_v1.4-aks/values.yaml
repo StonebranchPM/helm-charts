@@ -25,8 +25,8 @@ ucDeployment:
   imagePullSecrets:
     enabled: true
   image:
-    repository: nilsbuer/universal-controller
-    tag: 7.9.0.0
+    repository: 
+    tag: 
   resources:
     requests:
       memory: "1Gi"
@@ -59,8 +59,8 @@ persistentVolume:
 ############################################ Istio #####################################################
 istio:
   enabled: true
-  host: "akspresales.stonebranchdev.cloud"
-  hostCredentials: "akspresales-letsencrypt-tls"
+  host: ""
+  hostCredentials: ""
   TLSProtocol: "TLSV1_2"
   omsConnectionPort: 444
   udmConnectionPort: 445
@@ -69,8 +69,8 @@ istio:
 keyVault:
   enabled: false
   name: "psemea"
-  managedIdentityClientId: "0eb834fd-3520-423a-9a1c-c46d240240b5"
-  tenantId: "88af550b-a795-47b6-82fe-64db326a493a"
+  managedIdentityClientId: ""
+  tenantId: ""
   secrets:
     - name: "uc-db-password"
       key: "password"
