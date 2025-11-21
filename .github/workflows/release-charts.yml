@@ -38,8 +38,7 @@ jobs:
 
       - name: Validate Helm charts
         run: |
-          set -uo pipefail   # no -e here, we will track failures manually
-          set -x             # show commands for easier debugging
+          set -euo pipefail
 
           # Discover chart directories automatically
           CHARTS=()
@@ -56,57 +55,40 @@ jobs:
             echo "WARNING: No Helm chart directories found (helm_ua_*/helm_uac_* with Chart.yaml)."
           fi
 
-          # Relaxed yamllint config via heredoc (avoids quote issues)
-          read -r -d '' YAMLLINT_CONF << 'EOF'
-          extends: default
-          rules:
-            line-length:
-              max: 200
-              level: warning
-            trailing-spaces:
-              level: warning
-            comments:
-              min-spaces-from-content: 1
-              level: warning
-            document-start: disable
-          EOF
-
-          FAIL=0
+          # Relaxed yamllint config via heredoc -> cat (avoids read -d '' + set -e issue)
+          YAMLLINT_CONF=$(cat << 'EOF'
+extends: default
+rules:
+  line-length:
+    max: 200
+    level: warning
+  trailing-spaces:
+    level: warning
+  comments:
+    min-spaces-from-content: 1
+    level: warning
+  document-start: disable
+EOF
+)
 
           for chart in "${CHARTS[@]}"; do
             echo "=== Validating $chart ==="
 
             if [ -f "$chart/values.yaml" ]; then
               echo "Running yamllint on $chart/values.yaml..."
-              # If you want yamllint to be non-fatal, use '|| true' instead of setting FAIL
-              if ! yamllint -d "$YAMLLINT_CONF" "$chart/values.yaml"; then
-                echo "ERROR: yamllint failed for $chart/values.yaml"
-                FAIL=1
-              fi
+              yamllint -d "$YAMLLINT_CONF" "$chart/values.yaml"
             else
               echo "WARNING: $chart/values.yaml not found"
             fi
 
             echo "Running helm lint on $chart..."
-            if ! helm lint "$chart"; then
-              echo "ERROR: helm lint failed for $chart"
-              FAIL=1
-            fi
+            helm lint "$chart"
 
             echo "Rendering templates for $chart..."
             BASENAME="$(basename "$chart")"
             RELEASE_NAME="$(printf '%s' "$BASENAME" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9-]/-/g')"
-
-            if ! helm template "$RELEASE_NAME" "$chart" > /dev/null; then
-              echo "ERROR: helm template failed for $chart"
-              FAIL=1
-            fi
+            helm template "$RELEASE_NAME" "$chart" > /dev/null
           done
-
-          if [ "$FAIL" -ne 0 ]; then
-            echo "One or more charts failed validation."
-            exit 1
-          fi
 
   release-charts:
     needs: validate-charts
@@ -116,7 +98,7 @@ jobs:
 
     steps:
       - name: Checkout repository
-      uses: actions/checkout@v4
+        uses: actions/checkout@v4
 
       - name: Install dependencies (zip, yamllint)
         run: |
