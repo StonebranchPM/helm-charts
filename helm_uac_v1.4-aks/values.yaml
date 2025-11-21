@@ -85,6 +85,7 @@ keyVault:
 ucConfig:
   ucDbRdbms: "mysql"
   ucDbUrl: "jdbc:mysql://mysql-service:3306/"
+  ucDbName: "sb_test"
   ucDbUser: "root"
   ucDbPassword: "rootpassword"   # used only when keyVault.enabled=false
   ucNodeTransient: true

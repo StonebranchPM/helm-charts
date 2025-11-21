@@ -9,6 +9,7 @@ metadata:
 data:
   {{ include "uac.emitIfSet" (dict "name" "UC_SESSION_VALIDATION_REMOTE__ADDR_VALIDATE" "value" .Values.ucConfig.ucSessionValidation) | nindent 2 }}
   {{ include "uac.emitIfSet" (dict "name" "UC_DB_RDBMS" "value" .Values.ucConfig.ucDbRdbms) | nindent 2 }}
+  {{ include "uac.emitIfSet" (dict "name" "UC_DB_NAME" "value" .Values.ucConfig.ucDbName) | nindent 2 }}
   {{ include "uac.emitIfSet" (dict "name" "UC_DB_URL" "value" .Values.ucConfig.ucDbUrl) | nindent 2 }}
   {{ include "uac.emitIfSet" (dict "name" "UC_DB_USER" "value" .Values.ucConfig.ucDbUser) | nindent 2 }}
   {{ include "uac.emitIfSet" (dict "name" "UC_NODE_TRANSIENT" "value" .Values.ucConfig.ucNodeTransient) | nindent 2 }}
