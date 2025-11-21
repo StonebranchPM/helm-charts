@@ -1,5 +1,5 @@
 {{- if .Values.omsDeployment.enabled }}
-# one service, two ports for OMS and UDM
+# OMS service
 apiVersion: v1
 kind: Service
 metadata:
@@ -9,6 +9,7 @@ metadata:
     {{- include "universal-controller.labels" . | nindent 4 }}
     app.kubernetes.io/component: oms-service
 spec:
+  type: {{ if not .Values.route.enabled }}LoadBalancer{{ else }}ClusterIP{{ end }}
   selector:
     app.kubernetes.io/name: {{ include "universal-controller.name" . }}
     app.kubernetes.io/instance: {{ .Release.Name }}
@@ -30,6 +31,7 @@ metadata:
     {{- include "universal-controller.labels" . | nindent 4 }}
     app.kubernetes.io/component: udm-service
 spec:
+  type: {{ if not .Values.route.enabled }}LoadBalancer{{ else }}ClusterIP{{ end }}
   selector:
     {{- include "universal-controller.selectorLabels" . | nindent 4 }}
     app.kubernetes.io/component: udm
