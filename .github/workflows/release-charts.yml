@@ -184,10 +184,10 @@ jobs:
 
             ## Available Charts
 
-            - helm_ua_v1.5-aks.zip and corresponding ua-aks-1.5.0.tgz Helm package
-            - helm_ua_v1.5-ocp.zip and corresponding ua-ocp-1.5.0.tgz Helm package
-            - helm_uac_v1.4-aks.zip and corresponding uc-aks-1.4.0.tgz Helm package
-            - helm_uac_v1.4.1-ocp.zip and corresponding uc-ocp-1.4.1.tgz Helm package
+            - helm_ua_aks.zip and corresponding ua-aks.tgz Helm package
+            - helm_ua_ocp.zip and corresponding ua-ocp.tgz Helm package
+            - helm_uac_aks.zip and corresponding uc-aks.tgz Helm package
+            - helm_uac_ocp.zip and corresponding uc-ocp.tgz Helm package
 
             ## How to Install
 
@@ -220,9 +220,6 @@ jobs:
                 repository: "<your-controller-image-repository>"
                 tag: "<your-controller-image-tag>"
 
-            ## Support
-
-            For questions or issues, contact: len-maurice.seemann@stonebranch.com
           artifacts: "/tmp/charts/*.zip,/tmp/charts/*.tgz"
           allowUpdates: true
           removeArtifacts: true
