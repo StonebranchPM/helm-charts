@@ -141,7 +141,6 @@ helm uninstall my-universal-agent -n stonebranch
 
 For questions, issues, or feature requests:
 
-- **Maintainer:** len-maurice.seemann@stonebranch.com
 - **Team:** Product & Solutions Management Team
 - **Application Version:** 7.9.0.0
 
@@ -165,3 +164,4 @@ For questions, issues, or feature requests:
 ---
 
 **© 2025 Stonebranch - Universal Automation Center**
+
