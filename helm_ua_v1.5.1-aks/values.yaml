@@ -8,7 +8,7 @@ workloadIdentity:
   serviceAccountName: ""
 
 UA:
-  persistentVolume: #Using established persistent volume
+  persistentVolume: # Using established persistent volume
     enabled: false
 
 ############################################ Istio #####################################################
@@ -56,7 +56,7 @@ uaConfig:
   uagAutostart: "yes"
   uagLoglvl: ""
   uagLevel: ""
-  uagtlssnihostname: "" #Will be auto filled from tlssnihostnameref if enabled
+  uagtlssnihostname: "" # Will be auto filled from tlssnihostnameref if enabled
   # ------- OMS -------
   omsAutostart: "no"
   codepage: ""

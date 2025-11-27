@@ -3,7 +3,7 @@
 #################################################################################################
 
 UA:
-  persistentVolume: #Using established persistent volume
+  persistentVolume: # Using established persistent volume
     enabled: false
 
 ############################################ OMS Deployment ###########################################
@@ -46,7 +46,7 @@ uaConfig:
   uagAutostart: "yes"
   uagLoglvl: ""
   uagLevel: ""
-  uagtlssnihostname: "" #Will be auto filled from tlssnihostnameref if enabled
+  uagtlssnihostname: "" # Will be auto filled from tlssnihostnameref if enabled
   # ------- OMS -------
   omsAutostart: "yes"
   codepage: ""
