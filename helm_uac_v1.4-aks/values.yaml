@@ -12,7 +12,7 @@ istiosidecar:
 
 oms:
   enabled: true
-  persistentVolume: #Using established persistent volume
+  persistentVolume: # Using established persistent volume
     enabled: false
 
 nodeSelector:
