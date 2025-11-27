@@ -14,8 +14,8 @@ ucDeployment:
   imagePullSecrets:
     enabled: true
   image:
-    repository: 
-    tag: 
+    repository: "your-repo/uc"
+    tag: "latest"
   resources:
     requests:
       memory: "1Gi"
