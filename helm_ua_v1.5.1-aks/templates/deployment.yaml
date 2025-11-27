@@ -18,6 +18,9 @@ spec:
         {{- include "universal-controller.selectorLabels" . | nindent 8 }}
         app.kubernetes.io/component: ua
     spec:
+      {{- if .Values.workloadIdentity.enabled }}
+      serviceAccountName: {{ .Values.workloadIdentity.serviceAccountName }}
+      {{- end }}    
       securityContext:
         runAsNonRoot: true
         seccompProfile:

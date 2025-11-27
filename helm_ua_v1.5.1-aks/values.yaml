@@ -1,6 +1,11 @@
 #################################################################################################
 # UA Helm Deployment
 #################################################################################################
+### Workload Identity configuration
+workloadIdentity:
+  enabled: true
+  clientId: ""
+  serviceAccountName: ""
 
 UA:
   persistentVolume: #Using established persistent volume

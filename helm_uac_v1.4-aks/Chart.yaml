@@ -2,7 +2,7 @@ apiVersion: v2
 name: uc-aks
 description: A production-ready Helm chart for Universal Controller with OMS agent, external database support, and Istio service mesh integration
 type: application
-version: 1.4.0
+version: 1.4.1
 appVersion: "7.9.0.0"
 
 keywords:
