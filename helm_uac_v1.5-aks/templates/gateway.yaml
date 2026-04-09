@@ -1,4 +1,4 @@
-{{- if and (.Values.istiosidecar.enabled) (not (.Capabilities.APIVersions.Has "route.openshift.io/v1")) }}
+{{- if and .Values.istio.enabled (not (.Capabilities.APIVersions.Has "route.openshift.io/v1")) }}
 apiVersion: networking.istio.io/v1
 kind: Gateway
 metadata:
@@ -26,7 +26,6 @@ spec:
       mode: SIMPLE
       credentialName: {{ .Values.istio.hostCredentials }}    # cert for akspresales.stonebranchdev.cloud
       minProtocolVersion: {{ .Values.istio.TLSProtocol | quote }}
-      maxProtocolVersion: {{ .Values.istio.TLSProtocol | quote }}     
     hosts:
     - {{ .Values.istio.host | quote }}
 

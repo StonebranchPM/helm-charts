@@ -14,10 +14,12 @@ oms:
   enabled: true
   persistentVolume: # Using established persistent volume
     enabled: false
+persistentVolume:
+  name: ""
 
 nodeSelector:
   kubernetes.io/os: linux
-  agentpool: sbnodepool
+  agentpool: 
 
 ############################################ UC Deployment ############################################
 ucDeployment:
@@ -25,8 +27,8 @@ ucDeployment:
   imagePullSecrets:
     enabled: true
   image:
-    repository: "your-repo/uc"
-    tag: "latest"
+    repository: ""
+    tag: ""
   resources:
     requests:
       memory: "1Gi"
@@ -37,24 +39,22 @@ ucDeployment:
 
 ############################################ OMS Deployment ###########################################
 omsDeployment:
-  enabled: true
   replicas: 1
   image:
-    repository: stonebranch/universal-agent
-    tag: latest
+    repository: ""
+    tag: ""
   resources:
     requests:
-      memory: "128Mi"
-      cpu: "0.1m"
+      memory: "1Gi"
+      cpu: "250m"
     limits:
-      memory: "128Mi"
-      cpu: "1m"
+      memory: "1Gi"
+      cpu: "1000m"
   storageRequest: 1Gi
   storageClassName: "default"
   accessMode: ReadWriteOnce
 
-persistentVolume:
-  name: ""
+
 
 ############################################ Istio #####################################################
 istio:
@@ -68,18 +68,18 @@ istio:
 ############################################ Azure Key Vault ##########################################
 keyVault:
   enabled: false
-  name: "psemea"
+  name: ""
   managedIdentityClientId: ""
   tenantId: ""
   secrets:
-    - name: "uc-db-password"
-      key: "password"
-    - name: "uc-keystore-password"
-      key: "password-keystore"
-    - name: "uc-truststore-password"
-      key: "password-truststore"
-    - name: "uc-truststore-password-encrypted"
-      key: "UC_TRUSTMANAGER_TRUSTSTORE_PASSWORD_ENCRYPTED"
+    - name: ""
+      key: ""
+    - name: ""
+      key: ""
+    - name: ""
+      key: ""
+    - name: ""
+      key: ""
 
 ############################################ UC ConfigMap values ######################################
 ucConfig:
@@ -99,51 +99,51 @@ ucConfig:
   ucLdapBindPassword: ""
   ucLdapUserSearchBase: ""
   ucLdapGroupSearchBase: ""
-  ucLdapUserObjectClass: "user"
-  ucLdapGroupObjectClass: "group"
-  ucLdapUserSearchFilter: "(&(objectClass=user)(sAMAccountName={0}))"
-  ucLdapGroupSearchFilter: "(&(objectClass=group))"
-  ucLdapSynchronizationEnabled: "false"
-  ucLdapGroupsFilterIndirect: "true"
-  ucLdapGroupsSingleParent: "false"
-  ucLdapGroupsUpdateMembers: "true"
-  ucLdapUsersSyncByRange: "true"
-  ucLdapUsersSyncIndirect: "false"
-  ucLdapUsersUpdateMembershipsOnLogin: "false"
+  ucLdapUserObjectClass: ""
+  ucLdapGroupObjectClass: ""
+  ucLdapUserSearchFilter: ""
+  ucLdapGroupSearchFilter: ""
+  ucLdapSynchronizationEnabled: ""
+  ucLdapGroupsFilterIndirect: ""
+  ucLdapGroupsSingleParent: ""
+  ucLdapGroupsUpdateMembers: ""
+  ucLdapUsersSyncByRange: ""
+  ucLdapUsersSyncIndirect: ""
+  ucLdapUsersUpdateMembershipsOnLogin: ""
 
   # SAML
-  ucSamlLogLevel: "INFO"
-  ucSamlMetadataRefreshInterval: "120000"
-  ucSamlSignatureAlgorithm: "http://www.w3.org/2001/04/xmldsig-more#rsa-sha256"
-  ucSamlAuthnRequestForceAuthn: "false"
+  ucSamlLogLevel: ""
+  ucSamlMetadataRefreshInterval: ""
+  ucSamlSignatureAlgorithm: ""
+  ucSamlAuthnRequestForceAuthn: ""
 
   # Truststore (UC)
-  ucTrustManagerTruststore: "properties/cacerts"
-  ucTrustManagerTruststoreType: "KeyStore.getDefaultType()"
+  ucTrustManagerTruststore: ""
+  ucTrustManagerTruststoreType: ""
   ucTrustManagerTruststoreProvider: ""
-  ucTrustManagerTruststorePassword: "changeit"      # used only when keyVault.enabled=false
+  ucTrustManagerTruststorePassword: ""      # used only when keyVault.enabled=false
   ucTrustManagerTruststorePasswordEncrypted: ""     # used only when keyVault.enabled=false
 
   # OpenTelemetry
-  ucOtelSdkDisabled: "false"
-  ucOtelTracesExporter: "otlp"
-  ucOtelMetricsExporter: "otlp"
-  ucOtelExporterOtlpServiceName: "controller"
-  ucOtelExporterOtlpProtocol: "grpc"
+  ucOtelSdkDisabled: ""
+  ucOtelTracesExporter: ""
+  ucOtelMetricsExporter: ""
+  ucOtelExporterOtlpServiceName: ""
+  ucOtelExporterOtlpProtocol: ""
   ucOtelExporterOtlpEndpoint: ""
   ucOtelExporterOtlpTracesEndpoint: ""
   ucOtelExporterOtlpMetricsEndpoint: ""
-  ucOtelExporterOtlpTimeout: "10000"
+  ucOtelExporterOtlpTimeout: ""
   ucOtelExporterOtlpHeaders: ""
   ucOtelExporterOtlpTracesHeaders: ""
   ucOtelExporterOtlpMetricHeaders: ""
   ucOtelExporterOtlpCompressions: ""
   ucOtelExporterOtlpTracesCompression: ""
   ucOtelExporterOtlpMetricsCompression: ""
-  ucOtelExporterOtlpTracesTimeout: "10000"
-  ucOtelExporterOtlpMetricsTimeout: "10000"
-  ucOtelExporterOtlpMetricsTemporalityPreference: "CUMULATIVE"
-  ucOtelExporterOtlpMetricsDefaultHistogramAggregation: "EXPLICIT_BUCKET_HISTOGRAM"
+  ucOtelExporterOtlpTracesTimeout: ""
+  ucOtelExporterOtlpMetricsTimeout: ""
+  ucOtelExporterOtlpMetricsTemporalityPreference: ""
+  ucOtelExporterOtlpMetricsDefaultHistogramAggregation: ""
 
   # Prometheus
   ucPrometheusMetricsHistoryTotal: ""
@@ -156,29 +156,29 @@ ucConfig:
   ucPrometheusMetricsTaskInstanceDurationSecondsBucket: ""
 
   # General
-  jdkXmlEntityExpansionLimit: "1"
-  ucDateFormats: "yyyy/MM/dd;dd/MM/yyyy"
-  ucLoggingAppenders: "file"
-  ucServletPort: "8080"
-  ucActionEmailNotificationAttachOutputSubscriptionTimeoutInSeconds: "180"
+  jdkXmlEntityExpansionLimit: ""
+  ucDateFormats: ""
+  ucLoggingAppenders: ""
+  ucServletPort: ""
+  ucActionEmailNotificationAttachOutputSubscriptionTimeoutInSeconds: ""
   ucKeymanagerAlgorithm: ""
   ucKeymanagerClientAlias: ""
   ucKeymanagerKeystore: ""
   ucKeymanagerKeystorePassword: ""   # used only when keyVault.enabled=false
   ucKeymanagerProvider: ""
   ucMbeanCatalinaManagerName: ""
-  ucOverdueTimerStartupThreshold: "2"
-  ucTaskSAPRPCTimeout: "120"
-  ucTaskzosViewEditJCLTimeout: "60"
-  ucTrustmanagerAlgorithm: "SunX509"
-  ucTrustmanagerProvider: "SunJSSE"
+  ucOverdueTimerStartupThreshold: ""
+  ucTaskSAPRPCTimeout: ""
+  ucTaskzosViewEditJCLTimeout: ""
+  ucTrustmanagerAlgorithm: ""
+  ucTrustmanagerProvider: ""
   ucTrustmanagerSSLProtocols: ""
-  ucUISessionsTimeout: "30"
-  ucWebServiceAllowUnknownProperties: "false"
-  ucWebServiceHTTPClientSocketKeepAlive: "false"
+  ucUISessionsTimeout: ""
+  ucWebServiceAllowUnknownProperties: ""
+  ucWebServiceHTTPClientSocketKeepAlive: ""
   extensionmaxbytes: "250000000"
-  ucSecurityLdapEnabled: "false"
-  ucSessionValidation: "false"
+  ucSecurityLdapEnabled: ""
+  ucSessionValidation: ""
 ############################################ OMS ConfigMap values #####################################
 omsConfig:
   # ------- UAG -------
@@ -194,7 +194,7 @@ omsConfig:
   uagAutostart: "yes"
   uagLoglvl: ""
   uagLevel: ""
-
+  uagtlssnihostname: ""
   # ------- OMS -------
   omsAutostart: "yes"
   codepage: ""

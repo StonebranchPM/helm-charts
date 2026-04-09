@@ -45,19 +45,20 @@ Covers booleans, numbers, and strings.
 {{ $key }}: {{ $val | quote }}
 {{- end -}}
 {{- end -}}
-{{/* Emit a single key: value line only if the value is set (non-empty/non-nil). Always quote. */}}
+{{/* Emit a single key: value line only if the value is set (non-empty/non-nil). Always quote.
+     Embeds leading newline+indent so callers use {{- include ... }} to suppress blank lines. */}}
 {{- define "uac.emitIfSet" -}}
 {{- $v := .value -}}
 {{- if not (kindIs "invalid" $v) -}}
   {{- if kindIs "string" $v -}}
-    {{- if ne $v "" -}}
-{{ .name }}: {{ $v | quote }}
+    {{- if ne $v "" }}
+  {{ .name }}: {{ $v | quote }}
     {{- end -}}
-  {{- else if kindIs "bool" $v -}}
-{{ .name }}: {{ ternary "true" "false" $v | quote }}
+  {{- else if kindIs "bool" $v }}
+  {{ .name }}: {{ ternary "true" "false" $v | quote }}
   {{- else -}}
-    {{- if not (empty $v) -}}
-{{ .name }}: {{ printf "%v" $v | quote }}
+    {{- if not (empty $v) }}
+  {{ .name }}: {{ printf "%v" $v | quote }}
     {{- end -}}
   {{- end -}}
 {{- end -}}

@@ -26,9 +26,10 @@ spec:
     spec:
       serviceAccountName: {{ include "universal-controller.serviceAccountName" . }}
       securityContext:
-        fsGroup: 0
+        fsGroup: 1000
         runAsUser: 1000
         runAsGroup: 1000
+        runAsNonRoot: true
       {{- with .Values.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}
@@ -46,6 +47,14 @@ spec:
           volumeMounts:
             - name: oms-storage
               mountPath: "/var/opt/universal/spool/oms"
+{{- range $certName, $cert := .Values.certs.oms }}
+{{- if $cert.enabled }}
+            - name: {{ include "uc.safeName" (printf "cert-%s" $certName) }}
+              mountPath: {{ printf "%s/%s" $cert.mountDir $cert.fileName }}
+              subPath: {{ $cert.fileName }}
+              readOnly: true
+{{- end }}
+{{- end }}
           resources: {{- toYaml .Values.omsDeployment.resources | nindent 12 }}
           livenessProbe:
             exec:
@@ -76,4 +85,14 @@ spec:
         - name: oms-storage
           persistentVolumeClaim:
             claimName: '{{ .Release.Name }}-oms-pvc'
+{{- range $certName, $cert := .Values.certs.oms }}
+{{- if $cert.enabled }}
+        - name: {{ include "uc.safeName" (printf "cert-%s" $certName) }}
+          secret:
+            secretName: {{ $cert.secretName }}
+            items:
+              - key: {{ $cert.secretKey }}
+                path: {{ $cert.fileName }}
+{{- end }}
+{{- end }}
 {{- end }}
