@@ -19,7 +19,7 @@ persistentVolume:
 
 nodeSelector:
   kubernetes.io/os: linux
-  agentpool: 
+  agentpool: ""
 
 ############################################ UC Deployment ############################################
 ucDeployment:
