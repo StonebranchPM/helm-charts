@@ -54,8 +54,6 @@ omsDeployment:
   storageClassName: "default"
   accessMode: ReadWriteOnce
 
-
-
 ############################################ Istio #####################################################
 istio:
   enabled: true
