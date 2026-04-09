@@ -10,13 +10,12 @@ Pre-packaged Helm charts are available as ZIP files in the [**GitHub Releases**]
 ### Available Charts
 
 #### Universal Agent Charts (Ready to Use)
-- **helm_ua_v1.4.2.zip** - Universal Agent v1.4.2 (generic Kubernetes deployment)
-- **helm_ua_v1.5-AKS.zip** - Universal Agent v1.5 for Azure Kubernetes Service (with Istio support)
-- **helm_ua_v1.5-OCP.zip** - Universal Agent v1.5 for OpenShift Container Platform
+- **helm_ua_{version}.zip** - Universal Agent for Azure Kubernetes Service (with Istio support)
+- **helm_ua_{version}.zip** - Universal Agent for OpenShift Container Platform
 
 #### Universal Controller + Agent Charts (Requires Configuration)
-- **helm_uac_v1.4-AKS.zip** - Universal Controller + Agent v1.4 for Azure Kubernetes Service
-- **helm_uac_v1.4-OCP.zip** - Universal Controller + Agent v1.4 for OpenShift Container Platform
+- **helm_uac_{version}.zip** - Universal Controller + Agent for Azure Kubernetes Service
+- **helm_uac_{version}.zip** - Universal Controller + Agent for OpenShift Container Platform
 
 > ** Important:** UAC (Universal Controller) charts require you to provide your own Universal Controller image details in `values.yaml` before deployment:
 > - Set `ucDeployment.image.repository` to your controller image repository
@@ -78,16 +77,6 @@ oc get routes -n stonebranch
 
 ## Chart Details
 
-### Platform Support
-
-| Chart | Platform | Service Mesh | Version |
-|-------|----------|--------------|---------|
-| helm_ua_v1.4.2 | Generic Kubernetes | None | v1.4.2 |
-| helm_ua_v1.5-AKS | Azure Kubernetes Service | Istio | v1.5 |
-| helm_ua_v1.5-OCP | OpenShift Container Platform | Routes | v1.5 |
-| helm_uac_v1.4-AKS | Azure Kubernetes Service | Istio | v1.4 |
-| helm_uac_v1.4-OCP | OpenShift Container Platform | Routes | v1.4 |
-
 ### Features
 
 - **Production-ready configurations** with resource limits and health checks
@@ -97,11 +86,6 @@ oc get routes -n stonebranch
 - **Azure Key Vault integration** (AKS charts - optional)
 - **OpenTelemetry support** for observability
 - **Configurable LDAP/SAML authentication** (UAC charts)
-
-## Security Notes
-
-- The `image-secret.yaml` file is excluded from this repository (`.gitignore`)
-- If using private registries, create your own image pull secrets:
 
 ```bash
 kubectl create secret docker-registry my-registry-secret \
@@ -137,13 +121,6 @@ helm rollback my-universal-agent -n stonebranch
 helm uninstall my-universal-agent -n stonebranch
 ```
 
-## Support
-
-For questions, issues, or feature requests:
-
-- **Team:** Product & Solutions Management Team
-- **Application Version:** 7.9.0.0
-
 ## Development
 
 ### Repository Structure
@@ -153,11 +130,10 @@ For questions, issues, or feature requests:
 ├── .github/
 │   └── workflows/
 │       └── release-charts.yml    # Automated release workflow
-├── helm_ua_v1.4.2/               # Universal Agent v1.4.2
-├── helm_ua_v1.5-AKS/             # Universal Agent v1.5 (AKS)
-├── helm_ua_v1.5-OCP/             # Universal Agent v1.5 (OpenShift)
-├── helm_uac_v1.4-AKS/            # Universal Controller + Agent (AKS)
-├── helm_uac_v1.4-OCP/            # Universal Controller + Agent (OpenShift)
+├── helm_ua_{version}-aks/             # Universal Agent  (AKS)
+├── helm_ua_{version}-ocp/             # Universal Agent  (OpenShift)
+├── helm_uac_{version}-aks/            # Universal Controller + Agent (AKS)
+├── helm_uac_{version}-ocp/            # Universal Controller + Agent (OpenShift)
 └── README.md
 ```
 
