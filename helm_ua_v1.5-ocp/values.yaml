@@ -16,8 +16,8 @@ uaDeployment:
     tag: latest
   resources:
     requests:
-      memory: "128Mi"
-      cpu: "0.1m"
+      memory: "1Gi"
+      cpu: "1000m"
     limits:
       memory: "1Gi"
       cpu: "1000m"
