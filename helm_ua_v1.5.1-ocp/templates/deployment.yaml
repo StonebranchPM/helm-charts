@@ -40,8 +40,8 @@ spec:
                   name: '{{ .Release.Name }}-uasni-configmap'
                   key: UAGTLSSNIHOSTNAME
 {{- end }}
-{{- if .Values.uaDeployment.pvc.enabled }}                                          
-            volumeMounts:                                                                       
+{{- if .Values.uaDeployment.pvc.enabled }}
+          volumeMounts:                                                                       
               - name: oms-storage
                 mountPath: "/var/opt/universal/spool/oms"                                       
 {{- end }}
