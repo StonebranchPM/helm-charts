@@ -40,11 +40,11 @@ spec:
                   name: '{{ .Release.Name }}-uasni-configmap'
                   key: UAGTLSSNIHOSTNAME
 {{- end }}
-            {{- if .Values.uaDeployment.pvc.enabled }}                                          
+{{- if .Values.uaDeployment.pvc.enabled }}                                          
             volumeMounts:                                                                       
               - name: oms-storage
                 mountPath: "/var/opt/universal/spool/oms"                                       
-            {{- end }}
+{{- end }}
           resources:
             {{- toYaml .Values.uaDeployment.resources | nindent 12 }}
           livenessProbe:
