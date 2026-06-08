@@ -1,0 +1,442 @@
+#########################################################
+# UAC Helm Deployment
+#########################################################
+
+serviceAccount:
+  name: "default"
+
+oms:
+  namespace: ""         # leave empty to use Release.Namespace
+  enabled: true
+  existingClaim: ""     # set to a PVC name to use a pre-existing PVC/PV instead of volumeClaimTemplates
+  persistentVolume: # Using established persistent volume
+    enabled: false
+persistentVolume:
+  name: ""
+
+nodeSelector:
+  kubernetes.io/os: linux
+
+############################################ Ingress ################################################
+ingress:
+  enabled: false
+  className: ""           # e.g. "nginx"
+  host: ""
+  annotations: {}
+  tls: []
+
+############################################ OMS Service ############################################
+omsService:
+  type: ClusterIP         # ClusterIP | NodePort | LoadBalancer
+
+############################################ UC Deployment ############################################
+ucDeployment:
+  namespace: ""         # leave empty to use Release.Namespace
+  replicas: 1
+  imagePullSecrets:
+    enabled: true
+  image:
+    repository: ""
+    tag: ""
+  resources:
+    requests:
+      memory: "1Gi"
+      cpu: "250m"
+    limits:
+      memory: "1Gi"
+      cpu: "1000m"
+
+############################################ OMS Deployment ###########################################
+omsDeployment:
+  replicas: 1
+  image:
+    repository: ""
+    tag: ""
+  resources:
+    requests:
+      memory: "1Gi"
+      cpu: "250m"
+    limits:
+      memory: "1Gi"
+      cpu: "1000m"
+  storageRequest: 1Gi
+  storageClassName: "default"
+  accessMode: ReadWriteOnce
+
+
+
+############################################ UC ConfigMap values ######################################
+ucConfig:
+  ucDbRdbms: "mysql"
+  ucDbUrl: "jdbc:mysql://mysql-service:3306/"
+  ucDbName: ""
+  ucDbUser: ""
+  ucDbPassword: ""
+  ucNodeTransient: true
+  ucOmsServiceTimeout: 30
+  ucNodeHeartbeatThreshold: 30
+
+  # LDAP
+  ucLdapServerUrl: ""
+  ucLdapBaseDn: ""
+  ucLdapBindDn: ""
+  ucLdapBindPassword: ""
+  ucLdapUserSearchBase: ""
+  ucLdapGroupSearchBase: ""
+  ucLdapUserObjectClass: ""
+  ucLdapGroupObjectClass: ""
+  ucLdapUserSearchFilter: ""
+  ucLdapGroupSearchFilter: ""
+  ucLdapSynchronizationEnabled: ""
+  ucLdapGroupsFilterIndirect: ""
+  ucLdapGroupsSingleParent: ""
+  ucLdapGroupsUpdateMembers: ""
+  ucLdapUsersSyncByRange: ""
+  ucLdapUsersSyncIndirect: ""
+  ucLdapUsersUpdateMembershipsOnLogin: ""
+
+  # SAML
+  ucSamlLogLevel: ""
+  ucSamlMetadataRefreshInterval: ""
+  ucSamlSignatureAlgorithm: ""
+  ucSamlAuthnRequestForceAuthn: ""
+
+  # Truststore (UC)
+  ucTrustManagerTruststore: ""
+  ucTrustManagerTruststoreType: ""
+  ucTrustManagerTruststoreProvider: ""
+  ucTrustManagerTruststorePassword: ""      # used only when keyVault.enabled=false
+  ucTrustManagerTruststorePasswordEncrypted: ""     # used only when keyVault.enabled=false
+
+  # OpenTelemetry
+  ucOtelSdkDisabled: ""
+  ucOtelTracesExporter: ""
+  ucOtelMetricsExporter: ""
+  ucOtelExporterOtlpServiceName: ""
+  ucOtelExporterOtlpProtocol: ""
+  ucOtelExporterOtlpEndpoint: ""
+  ucOtelExporterOtlpTracesEndpoint: ""
+  ucOtelExporterOtlpMetricsEndpoint: ""
+  ucOtelExporterOtlpTimeout: ""
+  ucOtelExporterOtlpHeaders: ""
+  ucOtelExporterOtlpTracesHeaders: ""
+  ucOtelExporterOtlpMetricHeaders: ""
+  ucOtelExporterOtlpCompressions: ""
+  ucOtelExporterOtlpTracesCompression: ""
+  ucOtelExporterOtlpMetricsCompression: ""
+  ucOtelExporterOtlpTracesTimeout: ""
+  ucOtelExporterOtlpMetricsTimeout: ""
+  ucOtelExporterOtlpMetricsTemporalityPreference: ""
+  ucOtelExporterOtlpMetricsDefaultHistogramAggregation: ""
+
+  # Prometheus
+  ucPrometheusMetricsHistoryTotal: ""
+  ucPrometheusMetricsTaskInstanceDuration: ""
+  ucPrometheusMetricsTaskInstanceEarlyFinish: ""
+  ucPrometheusMetricsTaskInstanceLateFinish: ""
+  ucPrometheusMetricsTaskInstanceLateStart: ""
+  ucPrometheusMetricsTaskInstanceLaunchTotal: ""
+  ucPrometheusMetricsUniversalEventTotal: ""
+  ucPrometheusMetricsTaskInstanceDurationSecondsBucket: ""
+
+  # Tomcat Sizing
+  javaOpts: ""                           # e.g. "-Xms2g -Xmx4g -XX:+UseG1GC"
+  catalinaOpts: ""                       # Tomcat-specific JVM options
+  javaToolOptions: ""                    # Java tool options (JAVA_TOOL_OPTIONS env var)
+  ucTomcatMaxThreads: ""                 # Tomcat max thread pool size (default: 200)
+  ucTomcatMinSpareThreads: ""            # Tomcat min spare threads (default: 10)
+  ucTomcatMaxConnections: ""             # Tomcat max connections (default: 8192)
+  ucTomcatAcceptCount: ""                # Tomcat accept count (default: 100)
+  ucTomcatConnectionTimeout: ""          # Connection timeout in ms (default: 20000)
+
+  # General
+  jdkXmlEntityExpansionLimit: ""
+  ucDateFormats: ""
+  ucLoggingAppenders: ""
+  ucServletPort: ""
+  ucActionEmailNotificationAttachOutputSubscriptionTimeoutInSeconds: ""
+  ucKeymanagerAlgorithm: ""
+  ucKeymanagerClientAlias: ""
+  ucKeymanagerKeystore: ""
+  ucKeymanagerKeystorePassword: ""
+  ucKeymanagerProvider: ""
+  ucMbeanCatalinaManagerName: ""
+  ucOverdueTimerStartupThreshold: ""
+  ucTaskSAPRPCTimeout: ""
+  ucTaskzosViewEditJCLTimeout: ""
+  ucTrustmanagerAlgorithm: ""
+  ucTrustmanagerProvider: ""
+  ucTrustmanagerSSLProtocols: ""
+  ucUISessionsTimeout: ""
+  ucWebServiceAllowUnknownProperties: ""
+  ucWebServiceHTTPClientSocketKeepAlive: ""
+  extensionmaxbytes: ""
+  ucSecurityLdapEnabled: ""
+  ucSessionValidation: ""
+############################################ OMS ConfigMap values #####################################
+omsConfig:
+  # ------- UAG -------
+  uagagentclusters: ""
+  businessservices: ""
+  extensionacceptlist: ""
+  extensioncanceltimeout: ""
+  extensiondeployonregistration: ""
+  extensionpythonlist: ""
+  netname: "OMS Agent"
+  omsServers: ""
+  processcanceltimeout: ""
+  uagAutostart: "yes"
+  uagLoglvl: ""
+  uagLevel: ""
+  uagtlssnihostname: ""
+  # ------- OMS -------
+  omsAutostart: "yes"
+  codepage: ""
+  omsDNSCacheTimeout: ""
+  omsIndexCacheSize: ""
+  omsMaxConnections: ""
+  maxfilesize: ""
+  maxmessagesize: ""
+  omsMaxSSLProtocol: ""
+  omsLanguage: ""
+  omsMinSSLProtocol: ""
+  chunksize: ""
+  omsMSGCleanupInterval: ""
+  omsMSGDataFlushInt: ""
+  omsMSGSuppressionList: ""
+  otelenabletracing: ""
+  otelexportmetrics: ""
+  otelmetricsendpoint: ""
+  otelmetricsexportinterval: ""
+  otelservicename: ""
+  otelsslcacertpath: ""          # file path if used -> triggers mount
+  otelsslclientcertpath: ""      # file path if used -> triggers mount
+  otelsslclientkeypath: ""       # file path if used -> triggers mount
+  otelsslinsecureskipverify: ""
+  oteltraceendpoint: ""
+  omsRequiresSSL: ""
+  omsServiceBacklog: ""
+  omsSVCIAddr: ""
+  omsSVCIPort: ""
+  omsServiceTimeout: ""
+  sslcipherlist: ""
+  sslciphersuites: ""
+  omstracefilelines: ""
+  omstracetable: ""
+
+  # Optional OMS cert paths (leave empty to skip)
+  omsClientCertificatePath: ""   # file path -> triggers mount
+  omsClientKeyPath: ""           # file path -> triggers mount
+  omsServerCertificatePath: ""   # file path -> triggers mount
+  omsCACertificatePath: ""       # file path -> triggers mount
+
+  # ------- UBR -------
+  ubractivitymonitoring: ""
+  ubrcacerts: ""                 # file path -> triggers mount
+  ubrcert: ""                    # file path -> triggers mount
+  ubrcrl: ""                     # file path -> triggers mount
+  ubrdbfilegenerations: ""
+  ubrdnscachetimeout: ""
+  ubrecdsacert: ""               # file path -> triggers mount
+  ubrecdsaprivatekeypwd: ""
+  ubrecdsaprivatekey: ""         # file path -> triggers mount
+  ubreventgeneration: ""
+  ubrdest: ""
+  ubrlevel: ""
+  ubrmonitoreventexp: ""
+  ubrmountpoint: ""
+  ubrmountpointmode: ""
+  ubrmsgsuppressionlist: ""
+  ubrpersistenteventexp: ""
+  ubrprivatekey: ""              # file path -> triggers mount
+  ubrprivatekeypwd: ""
+  ubrretrymaxcomp: ""
+  ubrsafkeyring: ""
+  ubrsafkeyringlabel: ""
+  ubrservicebacklog: ""
+  ubrsvcipaddr: ""
+  ubrsvcport: ""
+  ubrshrmountpoint: ""
+  ubrshrmountpointmode: ""
+  ubrsmfexitloadlibrary: ""
+  ubrsslimplementation: ""
+  ubrsystemid: ""
+  ubrtcprecvbuffer: ""
+  ubrtcpsendbuffer: ""
+  ubrtracefilelines: ""
+  ucmdtracetable: ""
+  ubrucmdstcsupport: ""
+  ubrucmdpath: ""
+
+  # ------- UEM -------
+  uemAutostart: ""
+
+  # ------- UDM (paths empty by default; fill to trigger mounts) -------
+  udmackwindow: ""
+  udmallowreplonrename: ""
+  udmbifdirectory: ""
+  udmcacerts: ""                 # file path -> triggers mount
+  udmcert: ""                    # file path -> triggers mount
+  udmdaystilexpire: ""
+  udmcrl: ""                     # file path -> triggers mount
+  udmframeinterval: ""
+  udmidletimeout: ""
+  udmkeepaliveinterval: ""
+  udmmergelog: ""
+  udmlevel: ""
+  udmmodetype: ""
+  udmmsgsuppressionlist: ""
+  udmdelay: ""
+  udmnetworkfaulttolerant: ""
+  udmopenretry: ""
+  udmopenretrycount: ""
+  udmopenretryinterval: ""
+  udmoutboundip: ""
+  udmplfdirectory: ""
+  udmprivatekey: ""              # file path -> triggers mount
+  udmprivatekeypwd: ""
+  udmproxycertificates: ""       # file path -> triggers mount
+  udmretrycount: ""
+  udmretryinterval: ""
+  udmrecvbufssize: ""
+  udmport: ""
+  udmsafkeyring: ""
+  udmsafkeyringlabel: ""
+  udmscript: ""
+  udmoptions: ""
+  udmsendbufssize: ""
+  udmserverstopconditions: ""
+  udmsizeattrib: ""
+  udmsslimplementation: ""
+  udmsystemid: ""
+  udmtcpnodelay: ""
+  udmtcprecvbuffer: ""
+  udmtcpsendbuffer: ""
+  udmtracefilelines: ""
+  udmtracetable: ""
+  udmucmdpath: ""
+  udmumask: ""
+  udmusapdpath: ""
+  udmverifyhostname: ""
+
+######################################## Generic certificate mounts for OMS ########################################
+# For each cert-like value above, add a Secret mapping here. The Deployment will:
+# - check if the *value path* is non-empty, and the cert entry is enabled,
+# - then create a Secret volume and mount it at mountDir with fileName (using subPath if needed).
+certs:
+  oms:
+    # OpenTelemetry
+    otelsslcacertpath:
+      enabled: false
+      secretName: ""
+      secretKey: "otel-ca.crt"
+      mountDir: "/etc/oms-certs/otel"
+      fileName: "ca.crt"
+    otelsslclientcertpath:
+      enabled: false
+      secretName: ""
+      secretKey: "otel-client.crt"
+      mountDir: "/etc/oms-certs/otel"
+      fileName: "client.crt"
+    otelsslclientkeypath:
+      enabled: false
+      secretName: ""
+      secretKey: "otel-client.key"
+      mountDir: "/etc/oms-certs/otel"
+      fileName: "client.key"
+
+    # OMS direct certs
+    omsClientCertificatePath:
+      enabled: false
+      secretName: ""
+      secretKey: "oms-client.crt"
+      mountDir: "/etc/oms-certs/oms"
+      fileName: "client.crt"
+    omsClientKeyPath:
+      enabled: false
+      secretName: ""
+      secretKey: "oms-client.key"
+      mountDir: "/etc/oms-certs/oms"
+      fileName: "client.key"
+    omsServerCertificatePath:
+      enabled: false
+      secretName: ""
+      secretKey: "oms-server.crt"
+      mountDir: "/etc/oms-certs/oms"
+      fileName: "server.crt"
+    omsCACertificatePath:
+      enabled: false
+      secretName: ""
+      secretKey: "oms-ca.crt"
+      mountDir: "/etc/oms-certs/oms"
+      fileName: "ca.crt"
+
+    # UBR
+    ubrcacerts:
+      enabled: false
+      secretName: ""
+      secretKey: "ubr-ca.crt"
+      mountDir: "/etc/oms-certs/ubr"
+      fileName: "ca.crt"
+    ubrcert:
+      enabled: false
+      secretName: ""
+      secretKey: "ubr.crt"
+      mountDir: "/etc/oms-certs/ubr"
+      fileName: "ubr.crt"
+    ubrcrl:
+      enabled: false
+      secretName: ""
+      secretKey: "ubr.crl"
+      mountDir: "/etc/oms-certs/ubr"
+      fileName: "ubr.crl"
+    ubrecdsacert:
+      enabled: false
+      secretName: ""
+      secretKey: "ubr-ecdsa.crt"
+      mountDir: "/etc/oms-certs/ubr"
+      fileName: "ecdsa.crt"
+    ubrecdsaprivatekey:
+      enabled: false
+      secretName: ""
+      secretKey: "ubr-ecdsa.key"
+      mountDir: "/etc/oms-certs/ubr"
+      fileName: "ecdsa.key"
+    ubrprivatekey:
+      enabled: false
+      secretName: ""
+      secretKey: "ubr.key"
+      mountDir: "/etc/oms-certs/ubr"
+      fileName: "ubr.key"
+
+    # UDM
+    udmcacerts:
+      enabled: false
+      secretName: ""
+      secretKey: "udm-ca.crt"
+      mountDir: "/etc/oms-certs/udm"
+      fileName: "ca.crt"
+    udmcert:
+      enabled: false
+      secretName: ""
+      secretKey: "udm-cert.crt"
+      mountDir: "/etc/oms-certs/udm"
+      fileName: "udm-cert.crt"
+    udmcrl:
+      enabled: false
+      secretName: ""
+      secretKey: "udm.crl"
+      mountDir: "/etc/oms-certs/udm"
+      fileName: "udm.crl"
+    udmprivatekey:
+      enabled: false
+      secretName: ""
+      secretKey: "udm.key"
+      mountDir: "/etc/oms-certs/udm"
+      fileName: "udm.key"
+    udmproxycertificates:
+      enabled: false
+      secretName: ""
+      secretKey: "udm-proxy.pem"
+      mountDir: "/etc/oms-certs/udm"
+      fileName: "proxy.pem"

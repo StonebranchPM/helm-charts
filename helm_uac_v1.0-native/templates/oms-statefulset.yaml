@@ -1,0 +1,119 @@
+# templates/oms-statefulset.yaml
+{{- if .Values.oms.enabled }}
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ .Release.Name }}-oms
+  namespace: {{ include "oms.namespace" . }}
+  labels:
+    {{- include "universal-controller.labels" . | nindent 4 }}
+    app.kubernetes.io/component: oms
+spec:
+  replicas: {{ .Values.omsDeployment.replicas }}
+  serviceName: {{ .Release.Name }}-oms-headless
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: {{ include "universal-controller.name" . }}
+      app.kubernetes.io/instance: {{ .Release.Name }}
+      app.kubernetes.io/component: oms
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: {{ include "universal-controller.name" . }}
+        app.kubernetes.io/instance: {{ .Release.Name }}
+        app.kubernetes.io/component: oms
+    spec:
+      serviceAccountName: {{ include "universal-controller.serviceAccountName" . }}
+      securityContext:
+        fsGroup: 1000
+        runAsUser: 1000
+        runAsGroup: 1000
+        runAsNonRoot: true
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: uac-oms
+          image: "{{ .Values.omsDeployment.image.repository }}:{{ .Values.omsDeployment.image.tag }}"
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 7878
+            - containerPort: 7887
+          envFrom:
+            - configMapRef:
+                name: {{ .Release.Name }}-oms-configmap
+          volumeMounts:
+            - name: oms-storage
+              mountPath: "/var/opt/universal/spool/oms"
+{{- range $certName, $cert := .Values.certs.oms }}
+{{- if $cert.enabled }}
+            - name: {{ include "uc.safeName" (printf "cert-%s" $certName) }}
+              mountPath: {{ printf "%s/%s" $cert.mountDir $cert.fileName }}
+              subPath: {{ $cert.fileName }}
+              readOnly: true
+{{- end }}
+{{- end }}
+          resources: {{- toYaml .Values.omsDeployment.resources | nindent 12 }}
+          livenessProbe:
+            exec:
+              command:
+                - sh
+                - -c
+                - |
+                  pgrep -x omssrv >/dev/null ||
+                  pgrep -x ubroker >/dev/null ||
+                  pgrep -x uagsrv >/dev/null ||
+                  pgrep -x uemsrv >/dev/null
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          readinessProbe:
+            exec:
+              command:
+                - sh
+                - -c
+                - |
+                  pgrep -x omssrv >/dev/null ||
+                  pgrep -x ubroker >/dev/null ||
+                  pgrep -x uagsrv >/dev/null ||
+                  pgrep -x uemsrv >/dev/null
+            initialDelaySeconds: 5
+            periodSeconds: 10
+      volumes:
+{{- if .Values.oms.existingClaim }}
+        - name: oms-storage
+          persistentVolumeClaim:
+            claimName: {{ .Values.oms.existingClaim }}
+{{- end }}
+{{- range $certName, $cert := .Values.certs.oms }}
+{{- if $cert.enabled }}
+        - name: {{ include "uc.safeName" (printf "cert-%s" $certName) }}
+          secret:
+            secretName: {{ $cert.secretName }}
+            items:
+              - key: {{ $cert.secretKey }}
+                path: {{ $cert.fileName }}
+{{- end }}
+{{- end }}
+{{- if not .Values.oms.existingClaim }}
+  volumeClaimTemplates:
+    - metadata:
+        name: oms-storage
+        labels:
+          {{- include "universal-controller.labels" . | nindent 10 }}
+          app.kubernetes.io/component: oms-storage
+        annotations:
+          "helm.sh/resource-policy": keep
+      spec:
+        accessModes: [ {{ .Values.omsDeployment.accessMode }} ]
+        volumeMode: Filesystem
+        resources:
+          requests:
+            storage: {{ .Values.omsDeployment.storageRequest }}
+        {{- if .Values.oms.persistentVolume.enabled }}
+        storageClassName: {{ .Values.persistentVolume.name | quote }}
+        {{- else }}
+        storageClassName: {{ .Values.omsDeployment.storageClassName | quote }}
+        {{- end }}
+{{- end }}
+{{- end }}

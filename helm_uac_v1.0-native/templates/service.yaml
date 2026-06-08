@@ -1,0 +1,92 @@
+{{- if .Values.oms.enabled }}
+# Headless service — required by StatefulSet for stable pod DNS
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Release.Name }}-oms-headless
+  namespace: {{ include "oms.namespace" . }}
+  labels:
+    {{- include "universal-controller.labels" . | nindent 4 }}
+    app.kubernetes.io/component: oms-service
+spec:
+  clusterIP: None
+  selector:
+    app.kubernetes.io/name: {{ include "universal-controller.name" . }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/component: oms
+  ports:
+    - name: oms
+      port: 7878
+      targetPort: 7878
+      protocol: TCP
+    - name: udm
+      port: 7887
+      targetPort: 7887
+      protocol: TCP
+---
+# OMS service — type configurable: ClusterIP | NodePort | LoadBalancer
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Release.Name }}-oms-service
+  namespace: {{ include "oms.namespace" . }}
+  labels:
+    {{- include "universal-controller.labels" . | nindent 4 }}
+    app.kubernetes.io/component: oms-service
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: {{ include "universal-controller.name" . }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/component: oms
+  ports:
+    - name: oms
+      port: 7878
+      targetPort: 7878
+      protocol: TCP
+    - name: udm
+      port: 7887
+      targetPort: 7887
+      protocol: TCP
+
+{{- end }}
+---
+# UC headless service — required by StatefulSet for stable pod DNS
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Release.Name }}-uc-headless
+  namespace: {{ include "uc.namespace" . }}
+  labels:
+    {{- include "universal-controller.labels" . | nindent 4 }}
+    app.kubernetes.io/component: uc-service
+spec:
+  clusterIP: None
+  selector:
+    app.kubernetes.io/name: {{ include "universal-controller.name" . }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/component: uc
+  ports:
+    - name: http
+      port: 8080
+      targetPort: 8080
+      protocol: TCP
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Release.Name }}-uc-service
+  namespace: {{ include "uc.namespace" . }}
+  labels:
+    {{- include "universal-controller.labels" . | nindent 4 }}
+    app.kubernetes.io/component: uc-service
+spec:
+  selector:
+    app.kubernetes.io/name: {{ include "universal-controller.name" . }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/component: uc
+  ports:
+    - name: {{ .Release.Name }}-uc-port
+      protocol: TCP
+      port: 80
+      targetPort: 8080
