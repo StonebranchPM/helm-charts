@@ -40,6 +40,13 @@ jobs:
           cosign-release: 'v2.4.1'
 
       # ── package both charts ───────────────────────────────────────────────
+      # Patch the file:// dep to the published Pages URL before packaging so the
+      # released .tgz resolves the subchart from the Helm repo (not a local path).
+      - name: Repoint UC subchart dep to published repo URL
+        run: |
+          sed -i 's|file://../universal-agent|https://stonebranchpm.github.io/helm-charts|g' \
+            charts/universal-controller/Chart.yaml
+
       - name: Resolve subchart dependencies
         run: helm dependency update charts/universal-controller
 

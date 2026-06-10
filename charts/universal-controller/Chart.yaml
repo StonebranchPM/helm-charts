@@ -21,7 +21,7 @@ home: https://www.stonebranch.com
 dependencies:
   - name: universal-agent
     version: "1.5.x"
-    repository: "https://stonebranchpm.github.io/helm-charts"
+    repository: "file://../universal-agent"
     condition: agent.enabled
 
 maintainers:
