@@ -1,143 +1,172 @@
 # Stonebranch Universal Automation Helm Charts
 
-This repository contains production-ready Helm charts for deploying Stonebranch Universal Automation components on Kubernetes platforms.
-The helm charts are still in development, for any questions or feedback contact us.
+Production-ready Helm charts for deploying Stonebranch Universal Automation components on Kubernetes and OpenShift. A single chart per component covers all platforms — no forking required.
 
-## Downloads
+> For questions or support see [SUPPORT.md](SUPPORT.md). To contribute see [CONTRIBUTING.md](CONTRIBUTING.md).
 
-Pre-packaged Helm charts are available as ZIP files in the [**GitHub Releases**](../../releases/latest) section.
+---
 
-### Available Charts
+## Charts
 
-#### Universal Agent Charts (Ready to Use)
-- **helm_ua_{version}.zip** - Universal Agent for Azure Kubernetes Service (with Istio support)
-- **helm_ua_{version}.zip** - Universal Agent for OpenShift Container Platform
+| Chart | Description | Platforms |
+|---|---|---|
+| `universal-agent` | Universal Agent (OMS + UAG + UDM) | AKS, OpenShift, native Kubernetes |
+| `universal-controller` | Universal Controller + OMS Agent | AKS, OpenShift, native Kubernetes |
 
-#### Universal Controller + Agent Charts (Requires Configuration)
-- **helm_uac_{version}.zip** - Universal Controller + Agent for Azure Kubernetes Service
-- **helm_uac_{version}.zip** - Universal Controller + Agent for OpenShift Container Platform
+Platform differences (Route vs Ingress vs VirtualService, Istio sidecar, OCP SCC) are controlled via `platform: aks|openshift|native` and `istio.enabled` — no separate chart per platform.
 
-> ** Important:** UAC (Universal Controller) charts require you to provide your own Universal Controller image details in `values.yaml` before deployment:
-> - Set `ucDeployment.image.repository` to your controller image repository
-> - Set `ucDeployment.image.tag` to your desired version tag
+---
 
-## Installation
+## Installing from the Helm repository
 
-### 1. Download and Extract
+The recommended install method. The index is served from GitHub Pages and charts are fetched automatically.
 
 ```bash
-# Download the appropriate chart for your platform from Releases
-wget https://github.com/YOUR_ORG/YOUR_REPO/releases/download/latest/helm_ua_v1.5-AKS.zip
-
-# Extract the chart
-unzip helm_ua_v1.5-AKS.zip
-cd helm_ua_v1.5-AKS
+helm repo add stonebranch https://stonebranchpm.github.io/helm-charts
+helm repo update
 ```
 
-### 2. Review and Customize values.yaml
-
-Edit `values.yaml` according to your environment:
+### Universal Agent
 
 ```bash
-vi values.yaml
+# Review all available values first
+helm show values stonebranch/universal-agent > my-ua-values.yaml
+
+# Install (example: AKS with Istio)
+helm install my-ua stonebranch/universal-agent \
+  --version 1.5.1 \
+  --namespace stonebranch --create-namespace \
+  -f my-ua-values.yaml
 ```
 
-Key configuration areas:
-- **Image settings** (UAC charts only - provide your controller image)
-- **Resource requests/limits**
-- **Persistent volume settings**
-- **Networking** (Istio for AKS, Routes for OpenShift)
-- **Database connection** (for UAC charts)
-- **LDAP/SAML configuration** (optional)
+### Universal Controller
 
-### 3. Install the Chart
+The UC chart requires a customer-supplied controller image and an external database — no image or database is bundled.
 
 ```bash
-# Install with Helm 3
-helm install my-universal-agent . -n stonebranch --create-namespace
+# Review all available values first
+helm show values stonebranch/universal-controller > my-uc-values.yaml
 
-# Or specify custom values
-helm install my-universal-agent . -n stonebranch \
-  --set image.tag=7.9.0.0 \
-  --set resources.requests.memory=2Gi
+# Install (example: native Kubernetes)
+helm install my-uc stonebranch/universal-controller \
+  --version 1.5.0 \
+  --namespace stonebranch --create-namespace \
+  -f my-uc-values.yaml
 ```
 
-### 4. Verify Deployment
+Minimum required values for UC:
 
-```bash
-# Check pod status
-kubectl get pods -n stonebranch
-
-# Check logs
-kubectl logs -n stonebranch -l app=universal-agent
-
-# For OpenShift, check routes
-oc get routes -n stonebranch
-```
-
-## Chart Details
-
-### Features
-
-- **Production-ready configurations** with resource limits and health checks
-- **Persistent volume support** for agent data and logs
-- **External database integration** (UAC charts)
-- **Service mesh integration** (Istio for AKS, Routes for OpenShift)
-- **Azure Key Vault integration** (AKS charts - optional)
-- **OpenTelemetry support** for observability
-- **Configurable LDAP/SAML authentication** (UAC charts)
-
-```bash
-kubectl create secret docker-registry my-registry-secret \
-  --docker-server=<registry-url> \
-  --docker-username=<username> \
-  --docker-password=<password> \
-  -n stonebranch
-```
-
-Then reference it in `values.yaml`:
 ```yaml
-imagePullSecrets:
-  enabled: true
-# Create templates/image-secret.yaml with your secret configuration
-```
+platform: native   # aks | openshift | native
 
-## Upgrading
+uc:
+  image:
+    repository: <your-registry>/universal-controller
+    tag: "7.9.0.0"
 
-```bash
-# Update values if needed
-vi values.yaml
+database:
+  host: db.example.com
+  port: 5432
+  name: uc_db
+  type: postgresql
+  user: ucadmin
+  existingSecret: uc-db-secret   # key: password
 
-# Upgrade the release
-helm upgrade my-universal-agent . -n stonebranch
-
-# Rollback if needed
-helm rollback my-universal-agent -n stonebranch
-```
-
-## Uninstalling
-
-```bash
-helm uninstall my-universal-agent -n stonebranch
-```
-
-## Development
-
-### Repository Structure
-
-```
-.
-├── .github/
-│   └── workflows/
-│       └── release-charts.yml    # Automated release workflow
-├── helm_ua_{version}-aks/             # Universal Agent  (AKS)
-├── helm_ua_{version}-ocp/             # Universal Agent  (OpenShift)
-├── helm_uac_{version}-aks/            # Universal Controller + Agent (AKS)
-├── helm_uac_{version}-ocp/            # Universal Controller + Agent (OpenShift)
-└── README.md
+credentials:
+  existingSecret: uc-passwords   # keys: password, password-keystore,
+                                 #       password-truststore,
+                                 #       UC_TRUSTMANAGER_TRUSTSTORE_PASSWORD_ENCRYPTED
 ```
 
 ---
 
-**© 2025 Stonebranch - Universal Automation Center**
+## Installing from a downloaded package
 
+Download the `.tgz` from the [Releases](../../releases) page, then:
+
+```bash
+# Inspect default values
+helm show values universal-controller-1.5.0.tgz > my-values.yaml
+
+# Edit my-values.yaml, then install
+helm install my-uc universal-controller-1.5.0.tgz \
+  --namespace stonebranch --create-namespace \
+  -f my-values.yaml
+```
+
+---
+
+## Upgrading
+
+```bash
+helm repo update
+helm upgrade my-uc stonebranch/universal-controller \
+  --version 1.5.1 \
+  -f my-values.yaml
+
+# Rollback if needed
+helm rollback my-uc -n stonebranch
+```
+
+---
+
+## Uninstalling
+
+```bash
+helm uninstall my-uc -n stonebranch
+```
+
+---
+
+## Configuration highlights
+
+All configuration is done through values — nothing inside the chart needs to be edited.
+
+| Area | Key values |
+|---|---|
+| Platform | `platform: aks\|openshift\|native` |
+| Istio | `istio.enabled`, `istio.host` |
+| Image pull secrets | `imagePullSecrets: [{name: my-pull-secret}]` |
+| DB credentials | `database.*`, `credentials.existingSecret` |
+| Security context | `securityContext.{uc,oms}.{pod,container}` — fully overridable, OCP restricted-v2 compatible |
+| Probes | `ucProbes.*`, `omsProbes.*` — all thresholds exposed as values |
+| JVM heap | `jvm.maxRamPercentage: 75` |
+| HA | `uc.replicaCount: 2` enables PDB + soft pod anti-affinity |
+| NetworkPolicy | `networkPolicy.enabled: true` |
+| Prometheus | `serviceMonitor.enabled: true` (UC only, requires Prometheus Operator CRD) |
+| Escape hatches | `extraEnv`, `extraVolumes`, `extraVolumeMounts`, `extraObjects` |
+
+Full values reference: `helm show values stonebranch/<chart>`
+
+---
+
+## Repository structure
+
+```
+charts/
+├── universal-agent/        # Consolidated UA chart (replaces helm_ua_* variants)
+│   ├── Chart.yaml
+│   ├── values.yaml
+│   ├── CHANGELOG.md
+│   └── templates/
+└── universal-controller/   # Consolidated UC chart (replaces helm_uac_* variants)
+    ├── Chart.yaml
+    ├── values.yaml
+    ├── CHANGELOG.md
+    └── templates/
+
+helm_ua_v1.5.1-aks/        # Legacy — use charts/universal-agent instead
+helm_ua_v1.5.1-ocp/        # Legacy — use charts/universal-agent instead
+helm_uac_v1.0-native/      # Legacy — use charts/universal-controller instead
+helm_uac_v1.4.1-ocp/       # Legacy — use charts/universal-controller instead
+helm_uac_v1.5-aks/         # Legacy — use charts/universal-controller instead
+
+docs/
+├── ROADMAP.md
+├── COMPATIBILITY.md        # Supported UAC versions, Kubernetes versions, databases
+└── VARIANT-DIFF.md         # Platform diff captured at consolidation baseline
+```
+
+---
+
+**© Stonebranch — Universal Automation Center**
