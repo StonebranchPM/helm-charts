@@ -3,11 +3,11 @@ entries:
   universal-agent:
   - apiVersion: v2
     appVersion: 7.9.0.0
-    created: "2026-06-10T12:29:38.842791088+02:00"
+    created: "2026-06-10T12:47:28.574383478+02:00"
     description: 'Unified Helm chart for Stonebranch Universal Agent (OMS + UAG +
       UDM). Platform differences (AKS/Istio, OpenShift/Route, native) are selected
-      via the `platform` value — no chart forking required. '
-    digest: 08d14c5b1c3e10a3f200f30b72961ee3c9fd08ae9d206b855af8b108e4182bbb
+      via the `platform` value - no chart forking required. '
+    digest: 9887cb79f6b9f963b5162f5211ae2434a0f069e5ab756b13a053fd3c69ff141b
     home: https://www.stonebranch.com
     keywords:
     - stonebranch
@@ -25,17 +25,17 @@ entries:
   universal-controller:
   - apiVersion: v2
     appVersion: 7.9.0.0
-    created: "2026-06-10T12:29:38.845018622+02:00"
+    created: "2026-06-10T12:47:28.57648413+02:00"
     dependencies:
     - condition: agent.enabled
       name: universal-agent
-      repository: file://../universal-agent
+      repository: https://stonebranchpm.github.io/helm-charts
       version: 1.5.x
     description: 'Unified Helm chart for Stonebranch Universal Controller (UC) + OMS
       Agent. Platform differences (AKS/Istio, OpenShift/Route, native/Ingress) are
       selected via the `platform` value. Requires a customer-supplied UC image and
-      an external database — no bundled database. '
-    digest: 01e1a9ab1c169e6c487c2e65f1ebd2d56ed125c3124fc301067a5c0944338bda
+      an external database - no bundled database. '
+    digest: d87ba6e085140aae429d845b95c80467259c1a7ee0739a6fc6b30ed6cafefeec
     home: https://www.stonebranch.com
     keywords:
     - stonebranch
@@ -51,4 +51,4 @@ entries:
     urls:
     - https://stonebranchpm.github.io/helm-charts/universal-controller-1.5.0.tgz
     version: 1.5.0
-generated: "2026-06-10T12:29:38.840906744+02:00"
+generated: "2026-06-10T12:47:28.572643089+02:00"
