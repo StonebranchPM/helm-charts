@@ -80,6 +80,69 @@ jobs:
             git commit -m "chore: release $(date -u +%Y-%m-%dT%H:%M:%SZ)"
           git push origin gh-pages
 
+      # ── GitHub Releases (one per chart version, with .tgz download) ─────────
+      - name: Create / update GitHub Releases
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          for tgz in /tmp/helm-packages/*.tgz; do
+            name=$(helm show chart    "$tgz" | awk '/^name:/    {print $2}')
+            version=$(helm show chart "$tgz" | awk '/^version:/ {print $2}')
+            tag="${name}-${version}"
+
+            # Create the tag if it doesn't exist
+            git tag "$tag" 2>/dev/null || true
+            git push origin "$tag" 2>/dev/null || true
+
+            notes="$(cat <<EOF
+          ## ${name} v${version}
+
+          See [CHANGELOG](https://github.com/StonebranchPM/helm-charts/blob/main/charts/${name}/CHANGELOG.md) for what changed.
+
+          ---
+
+          ### Install via Helm repository (recommended)
+
+          \`\`\`bash
+          helm repo add stonebranch https://stonebranchpm.github.io/helm-charts
+          helm repo update
+          helm install my-release stonebranch/${name} --version ${version} -f my-values.yaml
+          \`\`\`
+
+          ### Install directly from the package download
+
+          Download \`${name}-${version}.tgz\` from the assets below, then:
+
+          \`\`\`bash
+          helm show values ${name}-${version}.tgz > my-values.yaml
+          # edit my-values.yaml, then:
+          helm install my-release ${name}-${version}.tgz -f my-values.yaml
+          \`\`\`
+
+          ### Install via OCI
+
+          \`\`\`bash
+          helm install my-release oci://ghcr.io/stonebranchpm/charts/${name} --version ${version} -f my-values.yaml
+          \`\`\`
+          EOF
+          )"
+
+            # Create release if it doesn't exist, otherwise update notes
+            if ! gh release view "$tag" --repo StonebranchPM/helm-charts &>/dev/null; then
+              gh release create "$tag" "$tgz" \
+                --repo StonebranchPM/helm-charts \
+                --title "${name} v${version}" \
+                --notes "$notes"
+            else
+              gh release upload "$tag" "$tgz" \
+                --repo StonebranchPM/helm-charts \
+                --clobber || true
+              gh release edit "$tag" \
+                --repo StonebranchPM/helm-charts \
+                --notes "$notes" || true
+            fi
+          done
+
       # ── OCI push + sign (non-blocking) ───────────────────────────────────
       - name: Log in to ghcr.io
         continue-on-error: true
