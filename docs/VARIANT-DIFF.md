@@ -163,9 +163,9 @@ Three `image-secret.yaml` templates contain base64-encoded Docker Hub PAT tokens
 
 | Chart | Username | Token fragment |
 |---|---|---|
-| `helm_uac_v1.0-native` | `lensb` | `[REDACTED]` |
-| `helm_uac_v1.4.1-ocp` | `nilsbuer` | `[REDACTED]` |
-| `helm_uac_v1.5-aks` | `nilsbuer` | `[REDACTED]` (same token) |
+| `helm_uac_v1.0-native` | `lensb` | `[REDACTED — rotate this PAT]` |
+| `helm_uac_v1.4.1-ocp` | `nilsbuer` | `[REDACTED — rotate this PAT]` |
+| `helm_uac_v1.5-aks` | `nilsbuer` | `[REDACTED — same token as above, rotate]` |
 
 **Required action before Phase 2:** Rotate both PATs immediately. Replace hardcoded base64 with the `existingSecret` pattern — accept a pre-created `kubernetes.io/dockerconfigjson` secret name as `ucDeployment.imagePullSecrets.secretName`. Never embed credentials in chart templates.
 
