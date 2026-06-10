@@ -1,0 +1,54 @@
+apiVersion: v1
+entries:
+  universal-agent:
+  - apiVersion: v2
+    appVersion: 7.9.0.0
+    created: "2026-06-10T12:29:38.842791088+02:00"
+    description: 'Unified Helm chart for Stonebranch Universal Agent (OMS + UAG +
+      UDM). Platform differences (AKS/Istio, OpenShift/Route, native) are selected
+      via the `platform` value — no chart forking required. '
+    digest: 08d14c5b1c3e10a3f200f30b72961ee3c9fd08ae9d206b855af8b108e4182bbb
+    home: https://www.stonebranch.com
+    keywords:
+    - stonebranch
+    - universal-agent
+    - oms
+    - automation
+    maintainers:
+    - email: len-maurice.seemann@stonebranch.com
+      name: Product & Solutions Management Team
+    name: universal-agent
+    type: application
+    urls:
+    - https://stonebranchpm.github.io/helm-charts/universal-agent-1.5.1.tgz
+    version: 1.5.1
+  universal-controller:
+  - apiVersion: v2
+    appVersion: 7.9.0.0
+    created: "2026-06-10T12:29:38.845018622+02:00"
+    dependencies:
+    - condition: agent.enabled
+      name: universal-agent
+      repository: file://../universal-agent
+      version: 1.5.x
+    description: 'Unified Helm chart for Stonebranch Universal Controller (UC) + OMS
+      Agent. Platform differences (AKS/Istio, OpenShift/Route, native/Ingress) are
+      selected via the `platform` value. Requires a customer-supplied UC image and
+      an external database — no bundled database. '
+    digest: 01e1a9ab1c169e6c487c2e65f1ebd2d56ed125c3124fc301067a5c0944338bda
+    home: https://www.stonebranch.com
+    keywords:
+    - stonebranch
+    - universal-controller
+    - oms
+    - automation
+    - external-database
+    maintainers:
+    - email: len-maurice.seemann@stonebranch.com
+      name: Product & Solutions Management Team
+    name: universal-controller
+    type: application
+    urls:
+    - https://stonebranchpm.github.io/helm-charts/universal-controller-1.5.0.tgz
+    version: 1.5.0
+generated: "2026-06-10T12:29:38.840906744+02:00"
