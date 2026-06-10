@@ -1,0 +1,112 @@
+name: Release
+
+# Trigger on chart changes pushed to main, or manually for bootstrap/recovery.
+# Chart-releaser detects which charts changed by diffing the previous main commit.
+# Tags are created BY this workflow (cr upload), not pushed manually.
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'charts/**'
+      - 'cr.yaml'
+  workflow_dispatch:  # manual trigger: bootstrap and recovery
+
+permissions:
+  contents: write     # push gh-pages index + create GitHub Releases + tags
+  packages: write     # push OCI to ghcr.io
+  id-token: write     # Cosign keyless OIDC signing
+
+jobs:
+  release:
+    name: Package → GitHub Pages + OCI + sign
+    runs-on: ubuntu-latest
+
+    steps:
+      # ── checkout ──────────────────────────────────────────────────────────
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0   # full history for cr to compare versions
+
+      - name: Configure git identity
+        run: |
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git config user.name "github-actions[bot]"
+
+      # ── toolchain ─────────────────────────────────────────────────────────
+      - name: Set up Helm
+        uses: azure/setup-helm@v4
+        with:
+          version: '3.18.1'
+
+      - name: Install chart-releaser CLI
+        run: |
+          CR_VERSION="1.6.1"
+          curl -sSLo /tmp/cr.tar.gz \
+            "https://github.com/helm/chart-releaser/releases/download/v${CR_VERSION}/chart-releaser_${CR_VERSION}_linux_amd64.tar.gz"
+          tar -xzf /tmp/cr.tar.gz -C /usr/local/bin cr
+          cr version
+
+      - name: Install Cosign
+        uses: sigstore/cosign-installer@v3
+        with:
+          cosign-release: 'v2.4.1'
+
+      # ── package ───────────────────────────────────────────────────────────
+      - name: Resolve subchart dependencies
+        run: helm dependency update charts/universal-controller
+
+      - name: Package all charts
+        run: |
+          mkdir -p /tmp/helm-packages
+          cr package charts/universal-agent     --destination /tmp/helm-packages
+          cr package charts/universal-controller --destination /tmp/helm-packages
+          echo "Packaged:"
+          ls -lh /tmp/helm-packages/
+
+      # ── publish to GitHub Releases + gh-pages ─────────────────────────────
+      - name: Upload chart packages to GitHub Releases
+        env:
+          CR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          cr upload \
+            --config cr.yaml \
+            --package-path /tmp/helm-packages \
+            --skip-existing
+
+      - name: Update Helm repo index on gh-pages
+        env:
+          CR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          cr index \
+            --config cr.yaml \
+            --package-path /tmp/helm-packages \
+            --index-path /tmp/index.yaml \
+            --push
+
+      # ── OCI push to ghcr.io (non-blocking) ────────────────────────────────
+      - name: Log in to ghcr.io
+        continue-on-error: true
+        run: |
+          echo "${{ secrets.GITHUB_TOKEN }}" \
+            | helm registry login ghcr.io \
+              --username "${{ github.actor }}" \
+              --password-stdin
+
+      - name: Push OCI artifacts
+        continue-on-error: true
+        run: |
+          for tgz in /tmp/helm-packages/*.tgz; do
+            echo "Pushing $tgz to OCI..."
+            helm push "$tgz" oci://ghcr.io/stonebranchpm/charts
+          done
+
+      - name: Sign OCI artifacts (Cosign keyless)
+        continue-on-error: true
+        run: |
+          for tgz in /tmp/helm-packages/*.tgz; do
+            name=$(helm show chart    "$tgz" | awk '/^name:/    {print $2}')
+            version=$(helm show chart "$tgz" | awk '/^version:/ {print $2}')
+            ref="ghcr.io/stonebranchpm/charts/${name}:${version}"
+            echo "Signing ${ref}..."
+            cosign sign --yes "$ref"
+          done
