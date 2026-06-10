@@ -1,0 +1,85 @@
+suite: universal-controller database configuration
+release:
+  name: test-release
+  namespace: stonebranch
+templates:
+  - uc-configmap.yaml
+
+tests:
+  - it: renders a ConfigMap
+    asserts:
+      - hasDocuments:
+          count: 1
+      - isKind:
+          of: ConfigMap
+
+  - it: emits UC_NODE_TRANSIENT from ucConfig defaults
+    asserts:
+      - equal:
+          path: data.UC_NODE_TRANSIENT
+          value: "true"
+
+  - it: does NOT emit UC_DB_URL when database.host is unset and ucConfig.ucDbUrl is empty
+    asserts:
+      - isNull:
+          path: data.UC_DB_URL
+
+  - it: emits UC_DB_URL from ucConfig legacy value
+    set:
+      ucConfig.ucDbUrl: "jdbc:mysql://mysql:3306/"
+    asserts:
+      - equal:
+          path: data.UC_DB_URL
+          value: "jdbc:mysql://mysql:3306/"
+
+  - it: builds JDBC URL from database block when database.host is set
+    set:
+      database.host: mysql.example.com
+      database.port: 3306
+      database.name: uc_db
+      database.type: mysql
+      database.user: ucadmin
+    asserts:
+      - matchRegex:
+          path: data.UC_DB_URL
+          pattern: "jdbc:mysql://mysql.example.com:3306/"
+
+  - it: database block sets UC_DB_NAME
+    set:
+      database.host: mysql.example.com
+      database.name: uc_db
+    asserts:
+      - equal:
+          path: data.UC_DB_NAME
+          value: uc_db
+
+  - it: database block sets UC_DB_USER
+    set:
+      database.host: mysql.example.com
+      database.user: ucadmin
+    asserts:
+      - equal:
+          path: data.UC_DB_USER
+          value: ucadmin
+
+  - it: database.type sets UC_DB_RDBMS
+    set:
+      database.host: pg.example.com
+      database.type: postgresql
+    asserts:
+      - equal:
+          path: data.UC_DB_RDBMS
+          value: postgresql
+
+  - it: database block overrides legacy ucConfig.ucDbUrl
+    set:
+      ucConfig.ucDbUrl: "jdbc:mysql://old-host:3306/"
+      database.host: new-host.example.com
+      database.type: mysql
+    asserts:
+      - matchRegex:
+          path: data.UC_DB_URL
+          pattern: "jdbc:mysql://new-host.example.com"
+      - notMatchRegex:
+          path: data.UC_DB_URL
+          pattern: "old-host"

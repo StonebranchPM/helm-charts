@@ -1,0 +1,154 @@
+suite: universal-agent platform modes
+release:
+  name: test-release
+  namespace: stonebranch
+
+tests:
+  # ─── native ───────────────────────────────────────────────────────────────────
+
+  - it: native — no Gateway, no Route, no ServiceAccount, no configmap-sni
+    set:
+      platform: native
+    templates:
+      - gateway.yaml
+      - route.yaml
+      - serviceaccount.yaml
+      - configmap-sni.yaml
+      - hostname-appendum.yaml
+    asserts:
+      - hasDocuments:
+          count: 0
+
+  - it: native — Deployment renders
+    template: deployment.yaml
+    set:
+      platform: native
+    asserts:
+      - hasDocuments:
+          count: 1
+      - isKind:
+          of: Deployment
+
+  # ─── openshift ────────────────────────────────────────────────────────────────
+
+  - it: openshift — Route is rendered
+    template: route.yaml
+    set:
+      platform: openshift
+    asserts:
+      - hasDocuments:
+          count: 1
+      - isKind:
+          of: Route
+
+  - it: openshift — no Istio Gateway
+    template: gateway.yaml
+    set:
+      platform: openshift
+    asserts:
+      - hasDocuments:
+          count: 0
+
+  - it: openshift — configmap-sni rendered when tlssnihostnameref.enabled
+    template: configmap-sni.yaml
+    set:
+      platform: openshift
+      tlssnihostnameref.enabled: true
+    asserts:
+      - hasDocuments:
+          count: 1
+
+  - it: openshift — hostname-appendum Job rendered when tlssnihostnameref.enabled
+    template: hostname-appendum.yaml
+    set:
+      platform: openshift
+      tlssnihostnameref.enabled: true
+    documentSelector:
+      path: kind
+      value: Job
+    asserts:
+      - isKind:
+          of: Job
+
+  # ─── aks ──────────────────────────────────────────────────────────────────────
+
+  - it: aks — Istio Gateway rendered when istio.enabled
+    template: gateway.yaml
+    set:
+      platform: aks
+      istio.enabled: true
+      istio.host: ua.example.com
+      istio.hostCredentials: ua-tls-secret
+    asserts:
+      - hasDocuments:
+          count: 1
+
+  - it: aks — no Gateway when istio.enabled=false
+    template: gateway.yaml
+    set:
+      platform: aks
+      istio.enabled: false
+    asserts:
+      - hasDocuments:
+          count: 0
+
+  - it: aks — ServiceAccount rendered when workloadIdentity.enabled
+    template: serviceaccount.yaml
+    set:
+      platform: aks
+      workloadIdentity.enabled: true
+      workloadIdentity.clientId: test-client-id
+      workloadIdentity.serviceAccountName: ua-sa
+    asserts:
+      - hasDocuments:
+          count: 1
+      - isKind:
+          of: ServiceAccount
+
+  # ─── networkPolicy ────────────────────────────────────────────────────────────
+
+  - it: NetworkPolicy NOT rendered by default
+    template: networkpolicy.yaml
+    asserts:
+      - hasDocuments:
+          count: 0
+
+  - it: NetworkPolicy rendered when enabled
+    template: networkpolicy.yaml
+    set:
+      networkPolicy.enabled: true
+    asserts:
+      - hasDocuments:
+          count: 1
+      - isKind:
+          of: NetworkPolicy
+
+  # ─── persistence ──────────────────────────────────────────────────────────────
+
+  - it: PVC rendered when persistence.enabled
+    template: pvc.yaml
+    set:
+      persistence.enabled: true
+    asserts:
+      - hasDocuments:
+          count: 1
+      - isKind:
+          of: PersistentVolumeClaim
+
+  - it: PVC NOT rendered when persistence.existingClaim is set
+    template: pvc.yaml
+    set:
+      persistence.enabled: true
+      persistence.existingClaim: my-existing-pvc
+    asserts:
+      - hasDocuments:
+          count: 0
+
+  - it: Deployment uses existingClaim when set
+    template: deployment.yaml
+    set:
+      persistence.existingClaim: my-existing-pvc
+    asserts:
+      - equal:
+          path: spec.template.spec.volumes[0].persistentVolumeClaim.claimName
+          value: my-existing-pvc

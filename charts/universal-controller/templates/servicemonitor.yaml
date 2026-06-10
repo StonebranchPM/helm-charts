@@ -1,0 +1,26 @@
+{{- if and .Values.serviceMonitor.enabled (.Capabilities.APIVersions.Has "monitoring.coreos.com/v1") }}
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: {{ .Release.Name }}-uc
+  namespace: {{ include "uc.namespace" . }}
+  labels:
+    {{- include "universal-controller.labels" . | nindent 4 }}
+    {{- with .Values.commonLabels }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+    {{- with .Values.serviceMonitor.additionalLabels }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+    app.kubernetes.io/component: uc
+spec:
+  selector:
+    matchLabels:
+      {{- include "universal-controller.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: uc
+  endpoints:
+    - port: http
+      path: /uc/resources/metrics
+      interval: {{ .Values.serviceMonitor.interval }}
+      scrapeTimeout: {{ .Values.serviceMonitor.scrapeTimeout }}
+{{- end }}

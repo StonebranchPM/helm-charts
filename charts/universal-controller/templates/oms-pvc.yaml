@@ -1,0 +1,23 @@
+{{- $isNative := include "uc.isNative" . | eq "true" -}}
+{{- if and .Values.oms.enabled (not (and $isNative .Values.statefulSet.enabled)) .Values.oms.persistence.enabled (not .Values.oms.persistence.existingClaim) }}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ .Release.Name }}-oms-pvc
+  namespace: {{ include "oms.namespace" . }}
+  labels:
+    {{- include "universal-controller.labels" . | nindent 4 }}
+    {{- with .Values.commonLabels }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+    app.kubernetes.io/component: oms-storage
+  annotations:
+    "helm.sh/resource-policy": keep
+spec:
+  accessModes: [ {{ .Values.oms.persistence.accessMode }} ]
+  volumeMode: Filesystem
+  resources:
+    requests:
+      storage: {{ .Values.oms.persistence.size }}
+  storageClassName: {{ .Values.oms.persistence.storageClassName | quote }}
+{{- end }}

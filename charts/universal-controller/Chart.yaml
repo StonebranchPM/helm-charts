@@ -1,0 +1,29 @@
+apiVersion: v2
+name: universal-controller
+description: >
+  Unified Helm chart for Stonebranch Universal Controller (UC) + OMS Agent.
+  Platform differences (AKS/Istio, OpenShift/Route, native/Ingress) are
+  selected via the `platform` value. Requires a customer-supplied UC image
+  and an external database — no bundled database.
+type: application
+version: 1.5.0
+appVersion: "7.9.0.0"
+
+keywords:
+  - stonebranch
+  - universal-controller
+  - oms
+  - automation
+  - external-database
+
+home: https://www.stonebranch.com
+
+dependencies:
+  - name: universal-agent
+    version: "1.5.x"
+    repository: "file://../universal-agent"
+    condition: agent.enabled
+
+maintainers:
+  - name: Product & Solutions Management Team
+    email: len-maurice.seemann@stonebranch.com

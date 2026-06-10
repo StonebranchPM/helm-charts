@@ -1,0 +1,19 @@
+{{- if gt (int .Values.replicaCount) 1 }}
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: {{ .Release.Name }}-ua
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "universal-agent.labels" . | nindent 4 }}
+    {{- with .Values.commonLabels }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+    app.kubernetes.io/component: ua
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      {{- include "universal-agent.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: ua
+{{- end }}

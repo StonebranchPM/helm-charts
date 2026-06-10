@@ -1,0 +1,43 @@
+# {{ template "chart.name" . }}
+
+{{ template "chart.description" . }}
+
+{{ template "chart.badgesSection" . }}
+
+## Usage
+
+```bash
+helm repo add stonebranchpm https://stonebranchpm.github.io/helm-charts
+helm show values stonebranchpm/{{ template "chart.name" . }} > my-values.yaml
+# Edit my-values.yaml, then:
+helm install my-ua stonebranchpm/{{ template "chart.name" . }} -f my-values.yaml
+```
+
+## Platform selection
+
+Set `platform` to one of `aks`, `openshift`, or `native`.
+
+| Platform | Networking | Identity |
+|---|---|---|
+| `aks` | Istio Gateway + VirtualService (when `istio.enabled=true`) | Azure Workload Identity |
+| `openshift` | OpenShift Route + SNI ConfigMap | N/A |
+| `native` | ClusterIP Service | N/A |
+
+## Image pull secrets
+
+Create your pull secret separately, then reference it:
+
+```bash
+kubectl create secret docker-registry my-pull-secret \
+  --docker-server=registry.example.com \
+  --docker-username=user --docker-password=token
+
+helm install my-ua stonebranchpm/{{ template "chart.name" . }} \
+  --set 'imagePullSecrets[0].name=my-pull-secret'
+```
+
+## Values
+
+{{ template "helm-docs.versionFooter" . }}
+
+{{ template "chart.valuesSection" . }}

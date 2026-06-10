@@ -1,0 +1,81 @@
+{{- $isOCP := include "ua.isOpenShift" . | eq "true" -}}
+{{- if and $isOCP .Values.tlssnihostnameref.enabled }}
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: {{ .Release.Name }}-ua-cm-patcher
+  namespace: {{ .Release.Namespace }}
+  annotations:
+    "helm.sh/hook": post-install,post-upgrade
+    "helm.sh/hook-weight": "5"
+    "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: {{ .Release.Name }}-ua-cm-patcher
+  namespace: {{ .Release.Namespace }}
+  annotations:
+    "helm.sh/hook": post-install,post-upgrade
+    "helm.sh/hook-weight": "5"
+    "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
+rules:
+  - apiGroups: ["route.openshift.io"]
+    resources: ["routes"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: [""]
+    resources: ["configmaps"]
+    verbs: ["get", "patch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: {{ .Release.Name }}-ua-cm-patcher
+  namespace: {{ .Release.Namespace }}
+  annotations:
+    "helm.sh/hook": post-install,post-upgrade
+    "helm.sh/hook-weight": "5"
+    "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
+subjects:
+  - kind: ServiceAccount
+    name: {{ .Release.Name }}-ua-cm-patcher
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: {{ .Release.Name }}-ua-cm-patcher
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ .Release.Name }}-ua-route-cm-patch
+  namespace: {{ .Release.Namespace }}
+  annotations:
+    "helm.sh/hook": post-install,post-upgrade
+    "helm.sh/hook-weight": "10"
+    "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
+spec:
+  backoffLimit: 2
+  template:
+    spec:
+      serviceAccountName: {{ .Release.Name }}-ua-cm-patcher
+      restartPolicy: Never
+      containers:
+        - name: patcher
+          image: bitnami/kubectl:latest
+          command: ["/bin/bash", "-lc"]
+          env:
+            - name: NS
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+            - name: RELEASE
+              value: {{ .Release.Name | quote }}
+          args:
+            - |
+              set -e
+              ROUTE_HOST=$(kubectl get route "${RELEASE}-udm-route" -n "$NS" -o jsonpath='{.spec.host}')
+              SNI_VALUE="{{ .Values.istio.udmConnectionPort | default 446 }}@${ROUTE_HOST}:${ROUTE_HOST}"
+              kubectl patch configmap "${RELEASE}-uasni-configmap" -n "$NS" \
+                --type=merge \
+                -p "{\"data\":{\"UAGTLSSNIHOSTNAME\":\"${SNI_VALUE}\"}}"
+{{- end }}

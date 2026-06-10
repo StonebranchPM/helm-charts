@@ -1,0 +1,29 @@
+# kind CI values — used by ct install in .github/workflows/ci-install.yaml
+# Purpose: verify K8s manifests are accepted by the API server.
+# Application functionality is NOT tested here; use make smoke for live cluster tests.
+platform: native
+
+image:
+  repository: busybox
+  tag: "stable"
+  pullPolicy: IfNotPresent
+
+replicaCount: 1
+
+resources:
+  requests:
+    memory: "64Mi"
+    cpu: "50m"
+  limits:
+    memory: "128Mi"
+    cpu: "100m"
+
+persistence:
+  enabled: false
+
+uaConfig:
+  uagOmsServers: "7878@oms-ci.ci-test.svc.cluster.local"
+
+# Disable helm test hooks — application doesn't run with busybox
+test:
+  enabled: false

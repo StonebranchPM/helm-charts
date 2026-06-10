@@ -1,0 +1,258 @@
+{{- $isNative := include "uc.isNative" . | eq "true" -}}
+{{- if .Values.oms.enabled }}
+{{- if and $isNative .Values.statefulSet.enabled }}
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ .Release.Name }}-oms
+  namespace: {{ include "oms.namespace" . }}
+  labels:
+    {{- include "universal-controller.labels" . | nindent 4 }}
+    {{- with .Values.commonLabels }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+    app.kubernetes.io/component: oms
+spec:
+  replicas: {{ .Values.oms.replicaCount }}
+  serviceName: {{ .Release.Name }}-oms-headless
+  selector:
+    matchLabels:
+      {{- include "universal-controller.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: oms
+  template:
+    metadata:
+      annotations:
+        sidecar.istio.io/inject: "false"
+        {{- with .Values.podAnnotations }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+      labels:
+        {{- include "universal-controller.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: oms
+    spec:
+      serviceAccountName: {{ include "universal-controller.serviceAccountName" . }}
+      securityContext:
+        {{- toYaml .Values.securityContext.oms.pod | nindent 8 }}
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.topologySpreadConstraints }}
+      topologySpreadConstraints:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: uac-oms
+          image: "{{ .Values.oms.image.repository }}:{{ .Values.oms.image.tag }}"
+          imagePullPolicy: {{ .Values.oms.image.pullPolicy }}
+          securityContext:
+            {{- toYaml .Values.securityContext.oms.container | nindent 12 }}
+          ports:
+            - containerPort: 7878
+            - containerPort: 7887
+          envFrom:
+            - configMapRef:
+                name: {{ .Release.Name }}-oms-configmap
+          volumeMounts:
+            - name: oms-storage
+              mountPath: "/var/opt/universal/spool/oms"
+{{- range $certName, $cert := .Values.certs.oms }}
+{{- if $cert.enabled }}
+            - name: {{ include "uc.safeName" (printf "cert-%s" $certName) }}
+              mountPath: {{ printf "%s/%s" $cert.mountDir $cert.fileName }}
+              subPath: {{ $cert.fileName }}
+              readOnly: true
+{{- end }}
+{{- end }}
+            {{- with .Values.extraVolumeMounts }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+          resources: {{- toYaml .Values.oms.resources | nindent 12 }}
+          startupProbe:
+            exec:
+              command: [sh, -c, "pgrep -x omssrv >/dev/null || pgrep -x ubroker >/dev/null || pgrep -x uagsrv >/dev/null || pgrep -x uemsrv >/dev/null"]
+            initialDelaySeconds: {{ .Values.omsProbes.startup.initialDelaySeconds }}
+            periodSeconds: {{ .Values.omsProbes.startup.periodSeconds }}
+            timeoutSeconds: {{ .Values.omsProbes.startup.timeoutSeconds }}
+            failureThreshold: {{ .Values.omsProbes.startup.failureThreshold }}
+          livenessProbe:
+            exec:
+              command: [sh, -c, "pgrep -x omssrv >/dev/null || pgrep -x ubroker >/dev/null || pgrep -x uagsrv >/dev/null || pgrep -x uemsrv >/dev/null"]
+            initialDelaySeconds: {{ .Values.omsProbes.liveness.initialDelaySeconds }}
+            periodSeconds: {{ .Values.omsProbes.liveness.periodSeconds }}
+            timeoutSeconds: {{ .Values.omsProbes.liveness.timeoutSeconds }}
+            failureThreshold: {{ .Values.omsProbes.liveness.failureThreshold }}
+          readinessProbe:
+            exec:
+              command: [sh, -c, "pgrep -x omssrv >/dev/null || pgrep -x ubroker >/dev/null || pgrep -x uagsrv >/dev/null || pgrep -x uemsrv >/dev/null"]
+            initialDelaySeconds: {{ .Values.omsProbes.readiness.initialDelaySeconds }}
+            periodSeconds: {{ .Values.omsProbes.readiness.periodSeconds }}
+            timeoutSeconds: {{ .Values.omsProbes.readiness.timeoutSeconds }}
+            failureThreshold: {{ .Values.omsProbes.readiness.failureThreshold }}
+      volumes:
+{{- if .Values.oms.persistence.existingClaim }}
+        - name: oms-storage
+          persistentVolumeClaim:
+            claimName: {{ .Values.oms.persistence.existingClaim }}
+{{- end }}
+{{- range $certName, $cert := .Values.certs.oms }}
+{{- if $cert.enabled }}
+        - name: {{ include "uc.safeName" (printf "cert-%s" $certName) }}
+          secret:
+            secretName: {{ $cert.secretName }}
+            items:
+              - key: {{ $cert.secretKey }}
+                path: {{ $cert.fileName }}
+{{- end }}
+{{- end }}
+{{- with .Values.extraVolumes }}
+        {{- toYaml . | nindent 8 }}
+{{- end }}
+{{- if not .Values.oms.persistence.existingClaim }}
+  volumeClaimTemplates:
+    - metadata:
+        name: oms-storage
+        labels:
+          {{- include "universal-controller.labels" . | nindent 10 }}
+          app.kubernetes.io/component: oms-storage
+        annotations:
+          "helm.sh/resource-policy": keep
+      spec:
+        accessModes: [ {{ .Values.oms.persistence.accessMode }} ]
+        volumeMode: Filesystem
+        resources:
+          requests:
+            storage: {{ .Values.oms.persistence.size }}
+        storageClassName: {{ .Values.oms.persistence.storageClassName | quote }}
+{{- end }}
+{{- else }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Release.Name }}-oms
+  namespace: {{ include "oms.namespace" . }}
+  labels:
+    {{- include "universal-controller.labels" . | nindent 4 }}
+    {{- with .Values.commonLabels }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+    app.kubernetes.io/component: oms
+spec:
+  replicas: {{ .Values.oms.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "universal-controller.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: oms
+  template:
+    metadata:
+      annotations:
+        sidecar.istio.io/inject: "false"
+        {{- with .Values.podAnnotations }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+      labels:
+        {{- include "universal-controller.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: oms
+    spec:
+      serviceAccountName: {{ include "universal-controller.serviceAccountName" . }}
+      securityContext:
+        {{- toYaml .Values.securityContext.oms.pod | nindent 8 }}
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.topologySpreadConstraints }}
+      topologySpreadConstraints:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: uac-oms
+          image: "{{ .Values.oms.image.repository }}:{{ .Values.oms.image.tag }}"
+          imagePullPolicy: {{ .Values.oms.image.pullPolicy }}
+          securityContext:
+            {{- toYaml .Values.securityContext.oms.container | nindent 12 }}
+          ports:
+            - containerPort: 7878
+            - containerPort: 7887
+          envFrom:
+            - configMapRef:
+                name: {{ .Release.Name }}-oms-configmap
+          volumeMounts:
+            - name: oms-storage
+              mountPath: "/var/opt/universal/spool/oms"
+{{- range $certName, $cert := .Values.certs.oms }}
+{{- if $cert.enabled }}
+            - name: {{ include "uc.safeName" (printf "cert-%s" $certName) }}
+              mountPath: {{ printf "%s/%s" $cert.mountDir $cert.fileName }}
+              subPath: {{ $cert.fileName }}
+              readOnly: true
+{{- end }}
+{{- end }}
+            {{- with .Values.extraVolumeMounts }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+          resources: {{- toYaml .Values.oms.resources | nindent 12 }}
+          startupProbe:
+            exec:
+              command: [sh, -c, "pgrep -x omssrv >/dev/null || pgrep -x ubroker >/dev/null || pgrep -x uagsrv >/dev/null || pgrep -x uemsrv >/dev/null"]
+            initialDelaySeconds: {{ .Values.omsProbes.startup.initialDelaySeconds }}
+            periodSeconds: {{ .Values.omsProbes.startup.periodSeconds }}
+            timeoutSeconds: {{ .Values.omsProbes.startup.timeoutSeconds }}
+            failureThreshold: {{ .Values.omsProbes.startup.failureThreshold }}
+          livenessProbe:
+            exec:
+              command: [sh, -c, "pgrep -x omssrv >/dev/null || pgrep -x ubroker >/dev/null || pgrep -x uagsrv >/dev/null || pgrep -x uemsrv >/dev/null"]
+            initialDelaySeconds: {{ .Values.omsProbes.liveness.initialDelaySeconds }}
+            periodSeconds: {{ .Values.omsProbes.liveness.periodSeconds }}
+            timeoutSeconds: {{ .Values.omsProbes.liveness.timeoutSeconds }}
+            failureThreshold: {{ .Values.omsProbes.liveness.failureThreshold }}
+          readinessProbe:
+            exec:
+              command: [sh, -c, "pgrep -x omssrv >/dev/null || pgrep -x ubroker >/dev/null || pgrep -x uagsrv >/dev/null || pgrep -x uemsrv >/dev/null"]
+            initialDelaySeconds: {{ .Values.omsProbes.readiness.initialDelaySeconds }}
+            periodSeconds: {{ .Values.omsProbes.readiness.periodSeconds }}
+            timeoutSeconds: {{ .Values.omsProbes.readiness.timeoutSeconds }}
+            failureThreshold: {{ .Values.omsProbes.readiness.failureThreshold }}
+      volumes:
+        - name: oms-storage
+          persistentVolumeClaim:
+            claimName: {{ default (printf "%s-oms-pvc" .Release.Name) .Values.oms.persistence.existingClaim }}
+{{- range $certName, $cert := .Values.certs.oms }}
+{{- if $cert.enabled }}
+        - name: {{ include "uc.safeName" (printf "cert-%s" $certName) }}
+          secret:
+            secretName: {{ $cert.secretName }}
+            items:
+              - key: {{ $cert.secretKey }}
+                path: {{ $cert.fileName }}
+{{- end }}
+{{- end }}
+        {{- with .Values.extraVolumes }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+{{- end }}
+{{- end }}

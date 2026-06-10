@@ -1,0 +1,83 @@
+{{- $isNative := include "uc.isNative" . | eq "true" -}}
+{{- $isStatefulSet := and $isNative .Values.statefulSet.enabled -}}
+{{- if .Values.oms.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Release.Name }}-oms-service
+  namespace: {{ include "oms.namespace" . }}
+  labels:
+    {{- include "universal-controller.labels" . | nindent 4 }}
+    app.kubernetes.io/component: oms-service
+spec:
+  selector:
+    {{- include "universal-controller.selectorLabels" . | nindent 4 }}
+    app.kubernetes.io/component: oms
+  ports:
+    - name: oms
+      port: 7878
+      targetPort: 7878
+      protocol: TCP
+    - name: udm
+      port: 7887
+      targetPort: 7887
+      protocol: TCP
+{{- if $isStatefulSet }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Release.Name }}-oms-headless
+  namespace: {{ include "oms.namespace" . }}
+  labels:
+    {{- include "universal-controller.labels" . | nindent 4 }}
+    app.kubernetes.io/component: oms-headless
+spec:
+  clusterIP: None
+  selector:
+    {{- include "universal-controller.selectorLabels" . | nindent 4 }}
+    app.kubernetes.io/component: oms
+  ports:
+    - name: oms
+      port: 7878
+      targetPort: 7878
+{{- end }}
+{{- end }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Release.Name }}-uc-service
+  namespace: {{ include "uc.namespace" . }}
+  labels:
+    {{- include "universal-controller.labels" . | nindent 4 }}
+    app.kubernetes.io/component: uc-service
+spec:
+  selector:
+    {{- include "universal-controller.selectorLabels" . | nindent 4 }}
+    app.kubernetes.io/component: uc
+  ports:
+    - name: {{ .Release.Name }}-uc-port
+      protocol: TCP
+      port: 80
+      targetPort: 8080
+{{- if $isStatefulSet }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Release.Name }}-uc-headless
+  namespace: {{ include "uc.namespace" . }}
+  labels:
+    {{- include "universal-controller.labels" . | nindent 4 }}
+    app.kubernetes.io/component: uc-headless
+spec:
+  clusterIP: None
+  selector:
+    {{- include "universal-controller.selectorLabels" . | nindent 4 }}
+    app.kubernetes.io/component: uc
+  ports:
+    - name: uc-http
+      port: 8080
+      targetPort: 8080
+{{- end }}

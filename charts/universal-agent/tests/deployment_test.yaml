@@ -1,0 +1,159 @@
+suite: universal-agent deployment defaults
+release:
+  name: test-release
+  namespace: stonebranch
+templates:
+  - deployment.yaml
+
+tests:
+  - it: renders a single Deployment
+    asserts:
+      - hasDocuments:
+          count: 1
+      - isKind:
+          of: Deployment
+      - isAPIVersion:
+          of: apps/v1
+
+  - it: uses release name in metadata
+    asserts:
+      - equal:
+          path: metadata.name
+          value: test-release-ua
+
+  - it: defaults to 1 replica
+    asserts:
+      - equal:
+          path: spec.replicas
+          value: 1
+
+  - it: uses configured image
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].image
+          value: stonebranch/universal-agent:7.9.0.0
+
+  - it: uses configured imagePullPolicy
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].imagePullPolicy
+          value: IfNotPresent
+
+  - it: sets runAsNonRoot on pod securityContext
+    asserts:
+      - equal:
+          path: spec.template.spec.securityContext.runAsNonRoot
+          value: true
+
+  - it: sets seccompProfile RuntimeDefault on pod
+    asserts:
+      - equal:
+          path: spec.template.spec.securityContext.seccompProfile.type
+          value: RuntimeDefault
+
+  - it: sets allowPrivilegeEscalation false on container
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].securityContext.allowPrivilegeEscalation
+          value: false
+
+  - it: drops ALL capabilities
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].securityContext.capabilities.drop
+          content: ALL
+
+  - it: has startupProbe
+    asserts:
+      - isNotNull:
+          path: spec.template.spec.containers[0].startupProbe
+      - equal:
+          path: spec.template.spec.containers[0].startupProbe.failureThreshold
+          value: 30
+
+  - it: has livenessProbe
+    asserts:
+      - isNotNull:
+          path: spec.template.spec.containers[0].livenessProbe
+
+  - it: has readinessProbe
+    asserts:
+      - isNotNull:
+          path: spec.template.spec.containers[0].readinessProbe
+
+  - it: mounts oms-storage when persistence enabled
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].volumeMounts
+          content:
+            name: oms-storage
+            mountPath: /var/opt/universal/spool/oms
+
+  - it: adds imagePullSecrets when set
+    set:
+      imagePullSecrets:
+        - name: my-registry-secret
+    asserts:
+      - contains:
+          path: spec.template.spec.imagePullSecrets
+          content:
+            name: my-registry-secret
+
+  - it: respects replicaCount override
+    set:
+      replicaCount: 3
+    asserts:
+      - equal:
+          path: spec.replicas
+          value: 3
+
+  - it: injects extraEnv
+    set:
+      extraEnv:
+        - name: MY_VAR
+          value: my-value
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: MY_VAR
+            value: my-value
+
+  - it: injects extraVolumeMounts
+    set:
+      extraVolumeMounts:
+        - name: extra-vol
+          mountPath: /mnt/extra
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].volumeMounts
+          content:
+            name: extra-vol
+            mountPath: /mnt/extra
+
+  - it: adds nodeSelector when set
+    set:
+      nodeSelector:
+        kubernetes.io/os: linux
+    asserts:
+      - equal:
+          path: spec.template.spec.nodeSelector["kubernetes.io/os"]
+          value: linux
+
+  - it: adds podAnnotations when set
+    set:
+      podAnnotations:
+        my-annotation: my-value
+    asserts:
+      - equal:
+          path: spec.template.metadata.annotations["my-annotation"]
+          value: my-value
+
+  - it: adds commonLabels to metadata
+    set:
+      commonLabels:
+        env: production
+    asserts:
+      - equal:
+          path: metadata.labels.env
+          value: production

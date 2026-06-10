@@ -1,0 +1,146 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "universal-agent values",
+  "type": "object",
+  "properties": {
+    "platform": {
+      "type": "string",
+      "enum": ["aks", "openshift", "native"],
+      "description": "Platform mode: aks | openshift | native"
+    },
+    "nameOverride": { "type": "string" },
+    "fullnameOverride": { "type": "string" },
+    "image": {
+      "type": "object",
+      "properties": {
+        "repository": { "type": "string" },
+        "tag": { "type": "string" },
+        "pullPolicy": {
+          "type": "string",
+          "enum": ["Always", "IfNotPresent", "Never"]
+        }
+      }
+    },
+    "imagePullSecrets": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": { "type": "string" }
+        },
+        "required": ["name"]
+      }
+    },
+    "replicaCount": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "resources": {
+      "type": "object",
+      "properties": {
+        "requests": {
+          "type": "object",
+          "properties": {
+            "memory": { "type": "string" },
+            "cpu": { "type": "string" }
+          }
+        },
+        "limits": {
+          "type": "object",
+          "properties": {
+            "memory": { "type": "string" },
+            "cpu": { "type": "string" }
+          }
+        }
+      }
+    },
+    "persistence": {
+      "type": "object",
+      "properties": {
+        "enabled": { "type": "boolean" },
+        "storageClassName": { "type": "string" },
+        "size": { "type": "string" },
+        "accessMode": {
+          "type": "string",
+          "enum": ["ReadWriteOnce", "ReadWriteMany", "ReadOnlyMany", "ReadWriteOncePod"]
+        },
+        "existingClaim": { "type": "string" }
+      }
+    },
+    "podAnnotations": { "type": "object" },
+    "commonLabels": { "type": "object" },
+    "nodeSelector": { "type": "object" },
+    "tolerations": { "type": "array" },
+    "affinity": { "type": "object" },
+    "topologySpreadConstraints": { "type": "array" },
+    "extraEnv": { "type": "array" },
+    "extraVolumes": { "type": "array" },
+    "extraVolumeMounts": { "type": "array" },
+    "extraObjects": { "type": "array" },
+    "workloadIdentity": {
+      "type": "object",
+      "properties": {
+        "enabled": { "type": "boolean" },
+        "clientId": { "type": "string" },
+        "serviceAccountName": { "type": "string" }
+      }
+    },
+    "serviceAccount": {
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" }
+      }
+    },
+    "istio": {
+      "type": "object",
+      "properties": {
+        "enabled": { "type": "boolean" },
+        "host": { "type": "string" },
+        "hostCredentials": { "type": "string" },
+        "tlsProtocol": {
+          "type": "string",
+          "enum": ["TLSV1_2", "TLSV1_3"]
+        },
+        "udmConnectionPort": { "type": "integer", "minimum": 1, "maximum": 65535 },
+        "udmConnectionPortInternal": { "type": "integer", "minimum": 1, "maximum": 65535 }
+      }
+    },
+    "tlssnihostnameref": {
+      "type": "object",
+      "properties": {
+        "enabled": { "type": "boolean" }
+      }
+    },
+    "uaConfig": { "type": "object" },
+    "securityContext": { "type": "object" },
+    "startupProbe": { "type": "object" },
+    "livenessProbe": { "type": "object" },
+    "readinessProbe": { "type": "object" },
+    "ha": {
+      "type": "object",
+      "properties": {
+        "podAntiAffinity": {
+          "type": "object",
+          "properties": {
+            "enabled": { "type": "boolean" }
+          }
+        }
+      }
+    },
+    "networkPolicy": {
+      "type": "object",
+      "properties": {
+        "enabled": { "type": "boolean" },
+        "additionalIngress": { "type": "array" },
+        "additionalEgress": { "type": "array" }
+      }
+    },
+    "test": {
+      "type": "object",
+      "properties": {
+        "enabled": { "type": "boolean" }
+      }
+    }
+  },
+  "required": ["platform"]
+}

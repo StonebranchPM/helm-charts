@@ -1,0 +1,76 @@
+suite: universal-controller high availability
+release:
+  name: test-release
+  namespace: stonebranch
+
+tests:
+  # ─── PodDisruptionBudget ──────────────────────────────────────────────────────
+
+  - it: does NOT render PDB when uc.replicaCount is 1
+    template: pdb.yaml
+    asserts:
+      - hasDocuments:
+          count: 0
+
+  - it: renders PDB when uc.replicaCount is 2
+    template: pdb.yaml
+    set:
+      uc.replicaCount: 2
+    asserts:
+      - hasDocuments:
+          count: 1
+      - isKind:
+          of: PodDisruptionBudget
+      - equal:
+          path: spec.minAvailable
+          value: 1
+
+  - it: PDB selector targets UC pods
+    template: pdb.yaml
+    set:
+      uc.replicaCount: 2
+    asserts:
+      - equal:
+          path: spec.selector.matchLabels["app.kubernetes.io/component"]
+          value: uc
+
+  # ─── podAntiAffinity ─────────────────────────────────────────────────────────
+
+  - it: no affinity when uc.replicaCount is 1
+    template: uc-deployment.yaml
+    asserts:
+      - isNull:
+          path: spec.template.spec.affinity
+
+  - it: adds soft podAntiAffinity when uc.replicaCount >= 2 and ha enabled
+    template: uc-deployment.yaml
+    set:
+      uc.replicaCount: 2
+      ha.podAntiAffinity.enabled: true
+    asserts:
+      - isNotNull:
+          path: spec.template.spec.affinity.podAntiAffinity.preferredDuringSchedulingIgnoredDuringExecution
+
+  - it: no podAntiAffinity when ha.podAntiAffinity.enabled=false
+    template: uc-deployment.yaml
+    set:
+      uc.replicaCount: 2
+      ha.podAntiAffinity.enabled: false
+    asserts:
+      - isNull:
+          path: spec.template.spec.affinity
+
+  - it: explicit affinity overrides ha-generated affinity
+    template: uc-deployment.yaml
+    set:
+      uc.replicaCount: 2
+      ha.podAntiAffinity.enabled: true
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms: []
+    asserts:
+      - isNotNull:
+          path: spec.template.spec.affinity.nodeAffinity
+      - isNull:
+          path: spec.template.spec.affinity.podAntiAffinity

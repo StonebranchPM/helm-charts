@@ -1,0 +1,143 @@
+{{- $isAKS := include "ua.isAKS" . | eq "true" -}}
+{{- $isOCP := include "ua.isOpenShift" . | eq "true" -}}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Release.Name }}-ua
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "universal-agent.labels" . | nindent 4 }}
+    {{- with .Values.commonLabels }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+    app.kubernetes.io/component: ua
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "universal-agent.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: ua
+  template:
+    metadata:
+      labels:
+        {{- include "universal-agent.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: ua
+      {{- with .Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+    spec:
+      {{- if and $isAKS .Values.workloadIdentity.enabled }}
+      serviceAccountName: {{ .Values.workloadIdentity.serviceAccountName }}
+      {{- end }}
+      securityContext:
+        {{- toYaml .Values.securityContext.pod | nindent 8 }}
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- if .Values.affinity }}
+      affinity:
+        {{- toYaml .Values.affinity | nindent 8 }}
+      {{- else if and .Values.ha.podAntiAffinity.enabled (gt (int .Values.replicaCount) 1) }}
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              podAffinityTerm:
+                topologyKey: kubernetes.io/hostname
+                labelSelector:
+                  matchLabels:
+                    {{- include "universal-agent.selectorLabels" . | nindent 20 }}
+                    app.kubernetes.io/component: ua
+      {{- end }}
+      {{- with .Values.topologySpreadConstraints }}
+      topologySpreadConstraints:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: ua-container
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          securityContext:
+            {{- toYaml .Values.securityContext.container | nindent 12 }}
+          envFrom:
+            - configMapRef:
+                name: {{ .Release.Name }}-ua-configmap
+          env:
+            {{- if and $isOCP .Values.tlssnihostnameref.enabled }}
+            - name: UAGTLSSNIHOSTNAME
+              valueFrom:
+                configMapKeyRef:
+                  name: '{{ .Release.Name }}-uasni-configmap'
+                  key: UAGTLSSNIHOSTNAME
+            {{- end }}
+            {{- with .Values.extraEnv }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+          volumeMounts:
+            {{- if .Values.persistence.enabled }}
+            - name: oms-storage
+              mountPath: "/var/opt/universal/spool/oms"
+            {{- end }}
+            {{- with .Values.extraVolumeMounts }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+          startupProbe:
+            exec:
+              command:
+                - sh
+                - -c
+                - |
+                  pgrep -x uagsrv >/dev/null ||
+                  pgrep -x omssrv >/dev/null ||
+                  pgrep -x uemsrv >/dev/null
+            initialDelaySeconds: {{ .Values.startupProbe.initialDelaySeconds }}
+            periodSeconds: {{ .Values.startupProbe.periodSeconds }}
+            timeoutSeconds: {{ .Values.startupProbe.timeoutSeconds }}
+            failureThreshold: {{ .Values.startupProbe.failureThreshold }}
+          livenessProbe:
+            exec:
+              command:
+                - sh
+                - -c
+                - |
+                  pgrep -x uagsrv >/dev/null ||
+                  pgrep -x omssrv >/dev/null ||
+                  pgrep -x uemsrv >/dev/null
+            initialDelaySeconds: {{ .Values.livenessProbe.initialDelaySeconds }}
+            periodSeconds: {{ .Values.livenessProbe.periodSeconds }}
+            timeoutSeconds: {{ .Values.livenessProbe.timeoutSeconds }}
+            failureThreshold: {{ .Values.livenessProbe.failureThreshold }}
+          readinessProbe:
+            exec:
+              command:
+                - sh
+                - -c
+                - |
+                  pgrep -x uagsrv >/dev/null ||
+                  pgrep -x omssrv >/dev/null ||
+                  pgrep -x uemsrv >/dev/null
+            initialDelaySeconds: {{ .Values.readinessProbe.initialDelaySeconds }}
+            periodSeconds: {{ .Values.readinessProbe.periodSeconds }}
+            timeoutSeconds: {{ .Values.readinessProbe.timeoutSeconds }}
+            failureThreshold: {{ .Values.readinessProbe.failureThreshold }}
+      volumes:
+        {{- if .Values.persistence.enabled }}
+        - name: oms-storage
+          persistentVolumeClaim:
+            claimName: {{ default (printf "%s-ua-pvc" .Release.Name) .Values.persistence.existingClaim }}
+        {{- end }}
+        {{- with .Values.extraVolumes }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}

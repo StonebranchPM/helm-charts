@@ -1,0 +1,6 @@
+dependencies:
+- name: universal-agent
+  repository: file://../universal-agent
+  version: 1.5.1
+digest: sha256:ff4fc6b3ffa16afe76df5f405e703beb4ad13a59d6393e1fb1257549249894e5
+generated: "2026-06-10T10:04:18.79789992+02:00"

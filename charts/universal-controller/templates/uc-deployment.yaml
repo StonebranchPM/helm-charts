@@ -1,0 +1,286 @@
+{{- $isNative := include "uc.isNative" . | eq "true" -}}
+{{- if and $isNative .Values.statefulSet.enabled }}
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: '{{ .Release.Name }}-uc'
+  namespace: {{ include "uc.namespace" . }}
+  labels:
+    {{- include "universal-controller.labels" . | nindent 4 }}
+    {{- with .Values.commonLabels }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+    app.kubernetes.io/component: uc
+spec:
+  replicas: {{ .Values.uc.replicaCount }}
+  serviceName: {{ .Release.Name }}-uc-headless
+  selector:
+    matchLabels:
+      {{- include "universal-controller.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: uc
+  template:
+    metadata:
+      labels:
+        {{- include "universal-controller.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: uc
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8080"
+        prometheus.io/path: "/uc/resources/metrics"
+        checksum/config: {{ include (print $.Template.BasePath "/uc-configmap.yaml") . | sha256sum }}
+        checksum/passwords: {{ include (print $.Template.BasePath "/uc-secret.yaml") . | sha256sum }}
+        {{- with .Values.podAnnotations }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+    spec:
+      serviceAccountName: {{ include "universal-controller.serviceAccountName" . }}
+      securityContext:
+        {{- toYaml .Values.securityContext.uc.pod | nindent 8 }}
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.topologySpreadConstraints }}
+      topologySpreadConstraints:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: uc-container
+          image: "{{ .Values.uc.image.repository }}:{{ .Values.uc.image.tag }}"
+          imagePullPolicy: {{ .Values.uc.image.pullPolicy }}
+          securityContext:
+            {{- toYaml .Values.securityContext.uc.container | nindent 12 }}
+          ports:
+            - containerPort: 8080
+          envFrom:
+            - configMapRef:
+                name: {{ .Release.Name }}-uc-configmap
+          env:
+            - name: UC_DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "uc.passwordSecretName" . }}
+                  key: {{ .Values.credentials.passwordKey }}
+            - name: UC_TRUSTMANAGER_TRUSTSTORE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "uc.passwordSecretName" . }}
+                  key: {{ .Values.credentials.truststorePasswordKey }}
+            - name: UC_TRUSTMANAGER_TRUSTSTORE_PASSWORD_ENCRYPTED
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "uc.passwordSecretName" . }}
+                  key: {{ .Values.credentials.truststoreEncryptedKey }}
+            - name: UC_KEYMANAGER_KEYSTORE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "uc.passwordSecretName" . }}
+                  key: {{ .Values.credentials.keystorePasswordKey }}
+            {{- if .Values.jvm.maxRamPercentage }}
+            - name: JAVA_TOOL_OPTIONS
+              value: "-XX:MaxRAMPercentage={{ .Values.jvm.maxRamPercentage }}"
+            {{- end }}
+            {{- with .Values.extraEnv }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+          {{- with .Values.extraVolumeMounts }}
+          volumeMounts:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          resources: {{- toYaml .Values.uc.resources | nindent 12 }}
+          startupProbe:
+            httpGet:
+              path: /uc/resources/clusternode/healthcheck
+              port: 8080
+              scheme: HTTP
+            initialDelaySeconds: {{ .Values.ucProbes.startup.initialDelaySeconds }}
+            periodSeconds: {{ .Values.ucProbes.startup.periodSeconds }}
+            timeoutSeconds: {{ .Values.ucProbes.startup.timeoutSeconds }}
+            failureThreshold: {{ .Values.ucProbes.startup.failureThreshold }}
+          readinessProbe:
+            httpGet:
+              path: /uc/resources/clusternode/healthcheck
+              port: 8080
+              scheme: HTTP
+            initialDelaySeconds: {{ .Values.ucProbes.readiness.initialDelaySeconds }}
+            periodSeconds: {{ .Values.ucProbes.readiness.periodSeconds }}
+            timeoutSeconds: {{ .Values.ucProbes.readiness.timeoutSeconds }}
+            failureThreshold: {{ .Values.ucProbes.readiness.failureThreshold }}
+          livenessProbe:
+            httpGet:
+              path: /uc/resources/clusternode/healthcheck
+              port: 8080
+              scheme: HTTP
+            initialDelaySeconds: {{ .Values.ucProbes.liveness.initialDelaySeconds }}
+            periodSeconds: {{ .Values.ucProbes.liveness.periodSeconds }}
+            timeoutSeconds: {{ .Values.ucProbes.liveness.timeoutSeconds }}
+            failureThreshold: {{ .Values.ucProbes.liveness.failureThreshold }}
+      {{- with .Values.extraVolumes }}
+      volumes:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+{{- else }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: '{{ .Release.Name }}-uc'
+  namespace: {{ include "uc.namespace" . }}
+  labels:
+    {{- include "universal-controller.labels" . | nindent 4 }}
+    {{- with .Values.commonLabels }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+    app.kubernetes.io/component: uc
+spec:
+  replicas: {{ .Values.uc.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "universal-controller.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: uc
+  template:
+    metadata:
+      labels:
+        {{- include "universal-controller.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: uc
+        {{- if .Values.istio.revision }}
+        istio.io/rev: {{ .Values.istio.revision | quote }}
+        {{- end }}
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8080"
+        prometheus.io/path: "/uc/resources/metrics"
+        {{- if .Values.istiosidecar.injection.enabled }}
+        sidecar.istio.io/inject: "true"
+        {{- end }}
+        checksum/config: {{ include (print $.Template.BasePath "/uc-configmap.yaml") . | sha256sum }}
+        {{- if .Values.keyVault.enabled }}
+        checksum/keyvault: {{ include (print $.Template.BasePath "/keyvault.yaml") . | sha256sum }}
+        {{- else }}
+        checksum/passwords: {{ include (print $.Template.BasePath "/uc-secret.yaml") . | sha256sum }}
+        {{- end }}
+        {{- with .Values.podAnnotations }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+    spec:
+      serviceAccountName: {{ include "universal-controller.serviceAccountName" . }}
+      securityContext:
+        {{- toYaml .Values.securityContext.uc.pod | nindent 8 }}
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- if .Values.affinity }}
+      affinity:
+        {{- toYaml .Values.affinity | nindent 8 }}
+      {{- else if and .Values.ha.podAntiAffinity.enabled (gt (int .Values.uc.replicaCount) 1) }}
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              podAffinityTerm:
+                topologyKey: kubernetes.io/hostname
+                labelSelector:
+                  matchLabels:
+                    {{- include "universal-controller.selectorLabels" . | nindent 20 }}
+                    app.kubernetes.io/component: uc
+      {{- end }}
+      {{- with .Values.topologySpreadConstraints }}
+      topologySpreadConstraints:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: uc-container
+          image: "{{ .Values.uc.image.repository }}:{{ .Values.uc.image.tag }}"
+          imagePullPolicy: {{ .Values.uc.image.pullPolicy }}
+          securityContext:
+            {{- toYaml .Values.securityContext.uc.container | nindent 12 }}
+          ports:
+            - containerPort: 8080
+          envFrom:
+            - configMapRef:
+                name: {{ .Release.Name }}-uc-configmap
+          env:
+            - name: UC_DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "uc.passwordSecretName" . }}
+                  key: {{ .Values.credentials.passwordKey }}
+            - name: UC_TRUSTMANAGER_TRUSTSTORE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "uc.passwordSecretName" . }}
+                  key: {{ .Values.credentials.truststorePasswordKey }}
+            - name: UC_TRUSTMANAGER_TRUSTSTORE_PASSWORD_ENCRYPTED
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "uc.passwordSecretName" . }}
+                  key: {{ .Values.credentials.truststoreEncryptedKey }}
+            - name: UC_KEYMANAGER_KEYSTORE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "uc.passwordSecretName" . }}
+                  key: {{ .Values.credentials.keystorePasswordKey }}
+            {{- if .Values.jvm.maxRamPercentage }}
+            - name: JAVA_TOOL_OPTIONS
+              value: "-XX:MaxRAMPercentage={{ .Values.jvm.maxRamPercentage }}"
+            {{- end }}
+            {{- with .Values.extraEnv }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+          {{- with .Values.extraVolumeMounts }}
+          volumeMounts:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          resources: {{- toYaml .Values.uc.resources | nindent 12 }}
+          startupProbe:
+            httpGet:
+              path: /uc/resources/clusternode/healthcheck
+              port: 8080
+              scheme: HTTP
+            initialDelaySeconds: {{ .Values.ucProbes.startup.initialDelaySeconds }}
+            periodSeconds: {{ .Values.ucProbes.startup.periodSeconds }}
+            timeoutSeconds: {{ .Values.ucProbes.startup.timeoutSeconds }}
+            failureThreshold: {{ .Values.ucProbes.startup.failureThreshold }}
+          readinessProbe:
+            httpGet:
+              path: /uc/resources/clusternode/healthcheck
+              port: 8080
+              scheme: HTTP
+            initialDelaySeconds: {{ .Values.ucProbes.readiness.initialDelaySeconds }}
+            periodSeconds: {{ .Values.ucProbes.readiness.periodSeconds }}
+            timeoutSeconds: {{ .Values.ucProbes.readiness.timeoutSeconds }}
+            failureThreshold: {{ .Values.ucProbes.readiness.failureThreshold }}
+          livenessProbe:
+            httpGet:
+              path: /uc/resources/clusternode/healthcheck
+              port: 8080
+              scheme: HTTP
+            initialDelaySeconds: {{ .Values.ucProbes.liveness.initialDelaySeconds }}
+            periodSeconds: {{ .Values.ucProbes.liveness.periodSeconds }}
+            timeoutSeconds: {{ .Values.ucProbes.liveness.timeoutSeconds }}
+            failureThreshold: {{ .Values.ucProbes.liveness.failureThreshold }}
+      {{- with .Values.extraVolumes }}
+      volumes:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+{{- end }}

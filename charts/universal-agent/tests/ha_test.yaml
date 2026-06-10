@@ -1,0 +1,80 @@
+suite: universal-agent high availability
+release:
+  name: test-release
+  namespace: stonebranch
+
+tests:
+  - it: does NOT render PDB when replicaCount is 1
+    template: pdb.yaml
+    asserts:
+      - hasDocuments:
+          count: 0
+
+  - it: renders PDB when replicaCount is 2
+    template: pdb.yaml
+    set:
+      replicaCount: 2
+    asserts:
+      - hasDocuments:
+          count: 1
+      - isKind:
+          of: PodDisruptionBudget
+      - equal:
+          path: spec.minAvailable
+          value: 1
+
+  - it: PDB selector matches UA pods
+    template: pdb.yaml
+    set:
+      replicaCount: 2
+    asserts:
+      - isNotNull:
+          path: spec.selector.matchLabels
+
+  - it: does NOT add anti-affinity when replicaCount is 1
+    template: deployment.yaml
+    asserts:
+      - isNull:
+          path: spec.template.spec.affinity
+
+  - it: adds podAntiAffinity when replicaCount is 2 and ha enabled
+    template: deployment.yaml
+    set:
+      replicaCount: 2
+      ha.podAntiAffinity.enabled: true
+    asserts:
+      - isNotNull:
+          path: spec.template.spec.affinity.podAntiAffinity
+
+  - it: uses preferredDuringScheduling anti-affinity (soft rule)
+    template: deployment.yaml
+    set:
+      replicaCount: 2
+      ha.podAntiAffinity.enabled: true
+    asserts:
+      - isNotNull:
+          path: spec.template.spec.affinity.podAntiAffinity.preferredDuringSchedulingIgnoredDuringExecution
+
+  - it: explicit affinity overrides ha-generated affinity
+    template: deployment.yaml
+    set:
+      replicaCount: 2
+      ha.podAntiAffinity.enabled: true
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms: []
+    asserts:
+      - isNotNull:
+          path: spec.template.spec.affinity.nodeAffinity
+      - isNull:
+          path: spec.template.spec.affinity.podAntiAffinity
+
+  - it: does NOT render anti-affinity when ha.podAntiAffinity disabled
+    template: deployment.yaml
+    set:
+      replicaCount: 2
+      ha.podAntiAffinity.enabled: false
+    asserts:
+      - isNull:
+          path: spec.template.spec.affinity

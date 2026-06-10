@@ -1,0 +1,60 @@
+{{- if .Values.test.enabled }}
+apiVersion: v1
+kind: Pod
+metadata:
+  name: {{ .Release.Name }}-test-health
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "universal-controller.labels" . | nindent 4 }}
+    app.kubernetes.io/component: test
+  annotations:
+    "helm.sh/hook": test
+    "helm.sh/hook-weight": "0"
+    "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
+spec:
+  restartPolicy: Never
+  {{- with .Values.imagePullSecrets }}
+  imagePullSecrets:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  securityContext:
+    runAsNonRoot: true
+    runAsUser: 65534
+    seccompProfile:
+      type: RuntimeDefault
+  containers:
+    - name: uc-health
+      image: "curlimages/curl:8.7.1"
+      imagePullPolicy: IfNotPresent
+      securityContext:
+        allowPrivilegeEscalation: false
+        capabilities:
+          drop: [ALL]
+        readOnlyRootFilesystem: true
+      command:
+        - /bin/sh
+        - -c
+        - |
+          set -e
+          echo "Testing UC health endpoint..."
+          curl -sf --max-time 15 \
+            "http://{{ .Release.Name }}-uc-service/uc/pub/status" \
+            -o /dev/null -w "HTTP %{http_code}\n"
+          echo "UC health check passed."
+    - name: oms-port
+      image: "alpine:3.19"
+      imagePullPolicy: IfNotPresent
+      securityContext:
+        allowPrivilegeEscalation: false
+        capabilities:
+          drop: [ALL]
+        readOnlyRootFilesystem: true
+      command:
+        - /bin/sh
+        - -c
+        - |
+          set -e
+          echo "Testing OMS port 7878..."
+          nc -z -w 10 {{ .Release.Name }}-oms-service 7878
+          echo "OMS port check passed."
+{{- end }}

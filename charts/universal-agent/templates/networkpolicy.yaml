@@ -1,0 +1,37 @@
+{{- if .Values.networkPolicy.enabled }}
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ .Release.Name }}-ua
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "universal-agent.labels" . | nindent 4 }}
+    {{- with .Values.commonLabels }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+    app.kubernetes.io/component: ua
+spec:
+  podSelector:
+    matchLabels:
+      {{- include "universal-agent.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: ua
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    # Allow OMS inbound
+    - ports:
+        - protocol: TCP
+          port: 7878
+        - protocol: TCP
+          port: 7887
+    {{- with .Values.networkPolicy.additionalIngress }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+  egress:
+    # Allow all egress by default (OMS connects out to UAC)
+    - {}
+    {{- with .Values.networkPolicy.additionalEgress }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+{{- end }}

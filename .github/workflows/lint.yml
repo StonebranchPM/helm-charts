@@ -1,0 +1,240 @@
+name: CI
+
+on:
+  push:
+    paths:
+      - 'charts/**'
+      - 'helm_*/**'
+      - 'tests/**'
+      - '.github/workflows/lint.yml'
+      - 'Makefile'
+  pull_request:
+    paths:
+      - 'charts/**'
+      - 'helm_*/**'
+      - 'tests/**'
+      - '.github/workflows/lint.yml'
+      - 'Makefile'
+
+jobs:
+  # ─── lint ─────────────────────────────────────────────────────────────────────
+  lint:
+    name: helm lint (all charts)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Helm
+        uses: azure/setup-helm@v4
+        with:
+          version: '3.18.1'
+
+      - name: Resolve subchart dependencies
+        run: helm dependency update charts/universal-controller
+
+      - name: Lint all charts
+        run: |
+          failed=0
+          for chart in \
+            helm_ua_v1.5.1-aks helm_ua_v1.5.1-ocp \
+            helm_uac_v1.0-native helm_uac_v1.4.1-ocp helm_uac_v1.5-aks \
+            charts/universal-agent charts/universal-controller; do
+            echo "::group::helm lint $chart"
+            if ! helm lint "$chart"; then
+              echo "::error::helm lint FAILED for $chart"
+              failed=1
+            fi
+            echo "::endgroup::"
+          done
+          exit $failed
+
+      - name: Schema validation (values.schema.json)
+        run: |
+          failed=0
+          for chart in charts/universal-agent charts/universal-controller; do
+            echo "::group::schema validate $chart"
+            if ! helm lint --strict "$chart"; then
+              echo "::error::schema validation FAILED for $chart"
+              failed=1
+            fi
+            echo "::endgroup::"
+          done
+          exit $failed
+
+  # ─── unittest ─────────────────────────────────────────────────────────────────
+  unittest:
+    name: helm unittest
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Helm
+        uses: azure/setup-helm@v4
+        with:
+          version: '3.18.1'
+
+      - name: Install helm-unittest plugin
+        run: helm plugin install https://github.com/helm-unittest/helm-unittest
+
+      - name: Resolve subchart dependencies
+        run: helm dependency update charts/universal-controller
+
+      - name: Run test suites
+        run: |
+          failed=0
+          for chart in charts/universal-agent charts/universal-controller; do
+            echo "::group::unittest $chart"
+            if ! helm unittest "$chart"; then
+              echo "::error::unittest FAILED for $chart"
+              failed=1
+            fi
+            echo "::endgroup::"
+          done
+          exit $failed
+
+  # ─── kubeconform ──────────────────────────────────────────────────────────────
+  kubeconform:
+    name: kubeconform + kube-score
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Helm
+        uses: azure/setup-helm@v4
+        with:
+          version: '3.18.1'
+
+      - name: Install kubeconform
+        run: |
+          curl -fsSL https://github.com/yannh/kubeconform/releases/download/v0.6.7/kubeconform-linux-amd64.tar.gz \
+            | tar xz -C /usr/local/bin kubeconform
+          kubeconform -v
+
+      - name: Install kube-score
+        run: |
+          curl -fsSL https://github.com/zegl/kube-score/releases/download/v1.19.0/kube-score_1.19.0_linux_amd64.tar.gz \
+            | tar xz -C /usr/local/bin kube-score
+          kube-score version
+
+      - name: Resolve subchart dependencies
+        run: helm dependency update charts/universal-controller
+
+      - name: kubeconform — legacy charts
+        run: |
+          for chart in helm_ua_v1.5.1-aks helm_ua_v1.5.1-ocp helm_uac_v1.0-native helm_uac_v1.4.1-ocp helm_uac_v1.5-aks; do
+            echo "--- kubeconform $chart ---"
+            helm template ci-test "$chart" | kubeconform -strict -ignore-missing-schemas -summary -
+          done
+
+      - name: kubeconform — consolidated charts (all platforms)
+        run: |
+          failed=0
+          for platform in aks native openshift; do
+            echo "--- kubeconform universal-agent:$platform ---"
+            helm template ci-test charts/universal-agent --set platform=$platform \
+              | kubeconform -strict -ignore-missing-schemas -summary - || failed=1
+
+            echo "--- kubeconform universal-controller:$platform ---"
+            helm template ci-test charts/universal-controller --set platform=$platform \
+              | kubeconform -strict -ignore-missing-schemas -summary - || failed=1
+          done
+          exit $failed
+
+      - name: kube-score — consolidated charts
+        run: |
+          for platform in aks native; do
+            echo "--- kube-score universal-agent:$platform ---"
+            helm template ci-test charts/universal-agent --set platform=$platform \
+              | kube-score score - --ignore-test container-image-tag --ignore-test container-image-pull-policy || true
+
+            echo "--- kube-score universal-controller:$platform ---"
+            helm template ci-test charts/universal-controller --set platform=$platform \
+              | kube-score score - --ignore-test container-image-tag --ignore-test container-image-pull-policy || true
+          done
+
+  # ─── golden ───────────────────────────────────────────────────────────────────
+  golden:
+    name: golden file diff
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Helm
+        uses: azure/setup-helm@v4
+        with:
+          version: '3.18.1'
+
+      - name: Resolve subchart dependencies
+        run: helm dependency update charts/universal-controller
+
+      - name: Legacy golden file diff
+        run: |
+          changed=0
+          for chart in helm_ua_v1.5.1-aks helm_ua_v1.5.1-ocp helm_uac_v1.0-native helm_uac_v1.4.1-ocp helm_uac_v1.5-aks; do
+            helm template test-release "$chart" > /tmp/golden-${chart//\//-}.yaml
+            if ! diff -q "tests/golden/${chart}/all.yaml" "/tmp/golden-${chart//\//-}.yaml" > /dev/null 2>&1; then
+              echo "::warning::Golden file changed for $chart — run 'make golden-update' if intentional"
+              diff "tests/golden/${chart}/all.yaml" "/tmp/golden-${chart//\//-}.yaml" || true
+              changed=1
+            fi
+          done
+          [ "$changed" = "1" ] && echo "::warning::Run 'make golden-update' to accept changes" || true
+
+      - name: New charts golden file diff
+        run: |
+          changed=0
+          for platform in aks native openshift; do
+            helm template test-release charts/universal-agent --set platform=$platform > /tmp/ua-${platform}.yaml
+            if ! diff -q "tests/golden/universal-agent/${platform}.yaml" "/tmp/ua-${platform}.yaml" > /dev/null 2>&1; then
+              echo "::warning::universal-agent:${platform} golden changed — run 'make golden-update' if intentional"
+              diff "tests/golden/universal-agent/${platform}.yaml" "/tmp/ua-${platform}.yaml" || true
+              changed=1
+            fi
+
+            helm template test-release charts/universal-controller --set platform=$platform > /tmp/uc-${platform}.yaml
+            if ! diff -q "tests/golden/universal-controller/${platform}.yaml" "/tmp/uc-${platform}.yaml" > /dev/null 2>&1; then
+              echo "::warning::universal-controller:${platform} golden changed — run 'make golden-update' if intentional"
+              diff "tests/golden/universal-controller/${platform}.yaml" "/tmp/uc-${platform}.yaml" || true
+              changed=1
+            fi
+          done
+          helm template test-release charts/universal-controller \
+            --set platform=native --set statefulSet.enabled=true > /tmp/uc-native-statefulset.yaml
+          if ! diff -q tests/golden/universal-controller/native-statefulset.yaml /tmp/uc-native-statefulset.yaml > /dev/null 2>&1; then
+            echo "::warning::universal-controller:native-statefulset golden changed"
+            diff tests/golden/universal-controller/native-statefulset.yaml /tmp/uc-native-statefulset.yaml || true
+            changed=1
+          fi
+          helm template test-release charts/universal-controller \
+            --set platform=aks --set istio.enabled=true > /tmp/uc-aks-istio.yaml
+          if ! diff -q tests/golden/universal-controller/aks-istio.yaml /tmp/uc-aks-istio.yaml > /dev/null 2>&1; then
+            echo "::warning::universal-controller:aks-istio golden changed"
+            diff tests/golden/universal-controller/aks-istio.yaml /tmp/uc-aks-istio.yaml || true
+            changed=1
+          fi
+          [ "$changed" = "1" ] && echo "::warning::Run 'make golden-update' to accept changes" || true
+
+  # ─── ct lint ──────────────────────────────────────────────────────────────────
+  ct-lint:
+    name: chart-testing lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Helm
+        uses: azure/setup-helm@v4
+        with:
+          version: '3.18.1'
+
+      - name: Install chart-testing
+        uses: helm/chart-testing-action@v2.7.0
+        with:
+          version: v3.12.0
+
+      - name: Resolve subchart dependencies
+        run: helm dependency update charts/universal-controller
+
+      - name: Run ct lint
+        run: ct lint --config ct.yaml --all

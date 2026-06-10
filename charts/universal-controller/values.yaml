@@ -1,0 +1,553 @@
+#################################################################################################
+# universal-controller — values
+# Platform reference:
+#   platform: aks       → Deployment, Istio Gateway+VirtualServices, KeyVault CSI, RBAC
+#   platform: openshift → Deployment, OpenShift Routes, hostname-appendum Job
+#   platform: native    → Deployment, K8s Ingress, RBAC
+#                         (set statefulSet.enabled=true for StatefulSet + VolumeClaimTemplate)
+#################################################################################################
+
+# -- Platform mode: aks | openshift | native
+platform: "aks"
+
+nameOverride: ""
+fullnameOverride: ""
+
+# -- List of pre-existing imagePullSecret names (kubernetes.io/dockerconfigjson type).
+# Create your secret first: kubectl create secret docker-registry my-secret ...
+# @default -- []
+imagePullSecrets: []
+# - name: my-registry-secret
+
+############################################ Security context ################################
+# Fully overridable. On OpenShift restricted-v2, omit runAsUser/runAsGroup — SCC assigns them.
+securityContext:
+  uc:
+    pod:
+      runAsNonRoot: true
+      seccompProfile:
+        type: RuntimeDefault
+    container:
+      allowPrivilegeEscalation: false
+      capabilities:
+        drop: [ALL]
+  oms:
+    pod:
+      fsGroup: 1000
+      runAsUser: 1000
+      runAsGroup: 1000
+      runAsNonRoot: true
+      seccompProfile:
+        type: RuntimeDefault
+    container:
+      allowPrivilegeEscalation: false
+      capabilities:
+        drop: [ALL]
+
+############################################ Probes ###########################################
+# UC uses HTTP healthcheck probes; startup probe allows Tomcat's slow boot.
+ucProbes:
+  startup:
+    initialDelaySeconds: 10
+    periodSeconds: 10
+    timeoutSeconds: 5
+    # 10 + 30*10 = 310s maximum startup window
+    failureThreshold: 30
+  readiness:
+    initialDelaySeconds: 20
+    periodSeconds: 10
+    timeoutSeconds: 5
+    failureThreshold: 6
+  liveness:
+    initialDelaySeconds: 120
+    periodSeconds: 20
+    timeoutSeconds: 5
+    failureThreshold: 5
+
+# OMS uses process-existence probes.
+omsProbes:
+  startup:
+    initialDelaySeconds: 5
+    periodSeconds: 10
+    timeoutSeconds: 5
+    failureThreshold: 30
+  liveness:
+    initialDelaySeconds: 10
+    periodSeconds: 10
+    timeoutSeconds: 5
+    failureThreshold: 3
+  readiness:
+    initialDelaySeconds: 5
+    periodSeconds: 10
+    timeoutSeconds: 5
+    failureThreshold: 3
+
+############################################ JVM heap ########################################
+jvm:
+  # -- JVM MaxRAMPercentage passed via JAVA_TOOL_OPTIONS (picked up by Java 9+ automatically)
+  maxRamPercentage: 75.0
+
+############################################ High Availability ################################
+# Note: Universal Controller is active/passive. Only one node processes at a time.
+# When replicaCount >= 2, a PodDisruptionBudget is rendered and soft anti-affinity is applied.
+ha:
+  podAntiAffinity:
+    # -- Add a soft (preferredDuringScheduling) anti-affinity rule when uc.replicaCount >= 2
+    enabled: true
+
+############################################ NetworkPolicy ###################################
+networkPolicy:
+  # -- Render a NetworkPolicy for UC and OMS pods
+  enabled: false
+  additionalIngress: []
+  additionalEgress: []
+
+############################################ ServiceMonitor ##################################
+serviceMonitor:
+  # -- Render a Prometheus ServiceMonitor (requires monitoring.coreos.com/v1 CRD)
+  enabled: false
+  # -- Scrape interval
+  interval: "30s"
+  # -- Scrape timeout
+  scrapeTimeout: "10s"
+  # -- Additional labels to add to the ServiceMonitor (e.g., for Prometheus instance selection)
+  additionalLabels: {}
+
+serviceAccount:
+  name: "default"
+
+############################################ UC workload ######################################
+uc:
+  image:
+    # -- Controller image repository. REQUIRED — customer-supplied from Stonebranch's registry.
+    repository: ""
+    # -- Controller image tag. REQUIRED.
+    tag: ""
+    # -- Image pull policy
+    pullPolicy: IfNotPresent
+  # -- Number of UC replicas
+  replicaCount: 1
+  # -- CPU and memory resource requests/limits for the UC container
+  resources:
+    requests:
+      memory: "1Gi"
+      cpu: "250m"
+    limits:
+      memory: "2Gi"
+      cpu: "1000m"
+  # -- Per-component namespace override (native platform only; leave empty to use release namespace)
+  namespace: ""
+
+############################################ OMS workload #####################################
+oms:
+  # -- Deploy the OMS component
+  enabled: true
+  image:
+    # -- OMS image repository. REQUIRED when oms.enabled=true.
+    repository: ""
+    # -- OMS image tag
+    tag: ""
+    # -- Image pull policy
+    pullPolicy: IfNotPresent
+  # -- Number of OMS replicas
+  replicaCount: 1
+  # -- CPU and memory resource requests/limits for the OMS container
+  resources:
+    requests:
+      memory: "1Gi"
+      cpu: "250m"
+    limits:
+      memory: "1Gi"
+      cpu: "1000m"
+  persistence:
+    # -- Enable a PVC for OMS spool data
+    enabled: true
+    # -- StorageClass name. Leave empty for the cluster default.
+    storageClassName: "default"
+    # -- Storage request size
+    size: 1Gi
+    # -- PVC access mode
+    accessMode: ReadWriteOnce
+    # -- Name of a pre-existing PVC. When set, no new PVC is created.
+    existingClaim: ""
+  # -- Per-component namespace override (native platform only)
+  namespace: ""
+
+############################################ Database #########################################
+# When database.host is set, the chart constructs the JDBC URL automatically.
+# Set database.existingSecret (preferred) or credentials.existingSecret for the password.
+database:
+  # -- Database hostname or IP
+  host: ""
+  # -- Database port
+  port: 3306
+  # -- Database schema / catalog name
+  name: ""
+  # -- RDBMS type: mysql | postgresql | oracle | mssql
+  type: "mysql"
+  # -- Database username
+  user: ""
+  # -- Pre-existing Secret name that holds the DB password (key defined by existingSecretKey)
+  existingSecret: ""
+  # -- Key in database.existingSecret that holds the DB password
+  existingSecretKey: "password"
+
+############################################ Credentials ######################################
+# When credentials.existingSecret is set the chart does NOT render uc-secret.yaml.
+# The referenced Secret must contain all 4 password keys.
+# Inline values below are only used when both existingSecret and keyVault.enabled are false.
+# Use changeme- prefix for dev examples; never commit real passwords.
+credentials:
+  # -- Pre-existing Secret name containing all UC passwords. Preferred for production.
+  existingSecret: ""
+  # -- Key in the Secret for the DB password
+  passwordKey: "password"
+  # -- Key in the Secret for the keystore password
+  keystorePasswordKey: "password-keystore"
+  # -- Key in the Secret for the truststore password
+  truststorePasswordKey: "password-truststore"
+  # -- Key in the Secret for the encrypted truststore password
+  truststoreEncryptedKey: "UC_TRUSTMANAGER_TRUSTSTORE_PASSWORD_ENCRYPTED"
+  # Dev fallbacks (ignored when existingSecret or keyVault.enabled is set)
+  dbPassword: ""
+  keystorePassword: ""
+  truststorePassword: ""
+  truststorePasswordEncrypted: ""
+
+############################################ Istio ############################################
+istiosidecar:
+  enabled: true
+  injection:
+    enabled: true
+
+# istio.enabled is independent of platform
+istio:
+  # -- Enable Istio Gateway + VirtualServices
+  enabled: false
+  # -- External hostname exposed via the Istio Gateway
+  host: ""
+  # -- TLS Secret name for the Istio Gateway credential
+  hostCredentials: ""
+  # -- TLS protocol version
+  tlsProtocol: "TLSV1_2"
+  # -- External port for OMS traffic through the Istio Gateway
+  omsConnectionPort: 444
+  # -- External port for UDM traffic through the Istio Gateway
+  udmConnectionPort: 445
+
+############################################ Azure Key Vault (AKS) ###########################
+keyVault:
+  # -- Enable Azure Key Vault CSI driver for secrets
+  enabled: false
+  name: ""
+  managedIdentityClientId: ""
+  tenantId: ""
+  secrets:
+    - name: ""
+      key: ""
+
+############################################ Pod configuration ################################
+# -- Additional annotations to add to UC and OMS pods
+podAnnotations: {}
+
+# -- Additional labels added to every resource rendered by this chart
+commonLabels: {}
+
+# -- Node selector for pod scheduling (applied to both UC and OMS pods)
+nodeSelector: {}
+
+# -- Tolerations for pod scheduling
+tolerations: []
+
+# -- Affinity rules for pod scheduling
+affinity: {}
+
+# -- Topology spread constraints for pod scheduling
+topologySpreadConstraints: []
+
+############################################ Escape hatches ###################################
+# -- Additional environment variables injected into UC and OMS containers
+extraEnv: []
+# - name: MY_CUSTOM_VAR
+#   value: "my-value"
+
+# -- Additional volumes to attach to pods
+extraVolumes: []
+
+# -- Additional volume mounts for containers
+extraVolumeMounts: []
+
+# -- Arbitrary Kubernetes objects to render alongside the chart resources
+extraObjects: []
+
+############################################ OpenShift Route ##################################
+route:
+  # -- Render OpenShift Route. Auto-enabled when platform=openshift.
+  # Set false to suppress even on OpenShift.
+  enabled: true
+
+############################################ Ingress (native) ################################
+ingress:
+  enabled: false
+  className: ""
+  host: ""
+  annotations: {}
+  tls: []
+
+############################################ StatefulSet opt-in (native) #####################
+statefulSet:
+  # -- Use StatefulSet + VolumeClaimTemplate instead of Deployment + standalone PVC (native only)
+  enabled: false
+
+############################################ TLS certificates #################################
+# certs.oms.<name>: {enabled, secretName, secretKey, mountDir, fileName}
+certs:
+  oms: {}
+
+############################################ OMS ConfigMap values #############################
+# Empty strings are omitted from the ConfigMap. Set only values you need to override.
+omsConfig:
+  # UAG
+  uagagentclusters: ""
+  businessservices: ""
+  extensionacceptlist: ""
+  extensioncanceltimeout: ""
+  extensiondeployonregistration: ""
+  extensionpythonlist: ""
+  netname: ""
+  omsServers: ""
+  processcanceltimeout: ""
+  uagAutostart: "yes"
+  uagLoglvl: ""
+  uagLevel: ""
+  uagtlssnihostname: ""
+  # OMS
+  omsAutostart: "no"
+  codepage: ""
+  omsDNSCacheTimeout: ""
+  omsIndexCacheSize: ""
+  omsMaxConnections: ""
+  maxfilesize: ""
+  maxmessagesize: ""
+  omsMaxSSLProtocol: ""
+  omsLanguage: ""
+  omsMinSSLProtocol: ""
+  chunksize: ""
+  omsMSGCleanupInterval: ""
+  omsMSGDataFlushInt: ""
+  omsMSGSuppressionList: ""
+  omsRequiresSSL: ""
+  omsServiceBacklog: ""
+  omsSVCIAddr: ""
+  omsSVCIPort: ""
+  omsServiceTimeout: ""
+  sslcipherlist: ""
+  sslciphersuites: ""
+  omstracefilelines: ""
+  omstracetable: ""
+  # UBR
+  ubractivitymonitoring: ""
+  ubrcacerts: ""
+  ubrcert: ""
+  ubrcrl: ""
+  ubrcompinforetention: ""
+  ubrcomponentbacklog: ""
+  ubrcmpport: ""
+  ubrdbfilegenerations: ""
+  ubrdnscachetimeout: ""
+  ubrecdsacert: ""
+  ubrecdsaprivatekeypwd: ""
+  ubrecdsaprivatekey: ""
+  ubreventgeneration: ""
+  ubrdest: ""
+  ubrlevel: ""
+  ubrmonitoreventexp: ""
+  ubrmountpoint: ""
+  ubrmountpointmode: ""
+  ubrmsgsuppressionlist: ""
+  ubrpersistenteventexp: ""
+  ubrprivatekey: ""
+  ubrprivatekeypwd: ""
+  ubrretrymaxcomp: ""
+  ubrsafkeyring: ""
+  ubrsafkeyringlabel: ""
+  ubrservicebacklog: ""
+  ubrsvcipaddr: ""
+  ubrsvcport: ""
+  ubrshrmountpoint: ""
+  ubrshrmountpointmode: ""
+  ubrsmfexitloadlibrary: ""
+  ubrsslimplementation: ""
+  ubrsystemid: ""
+  ubrtcprecvbuffer: ""
+  ubrtcpsendbuffer: ""
+  ubrtracefilelines: ""
+  ucmdtracetable: ""
+  ubrucmdstcsupport: ""
+  ubrucmdpath: ""
+  # UEM
+  uemAutostart: ""
+  # UDM
+  udmackwindow: ""
+  udmallowreplonrename: ""
+  udmbifdirectory: ""
+  udmcacerts: ""
+  udmcert: ""
+  udmdaystilexpire: ""
+  udmcrl: ""
+  udmencrypt: ""
+  udmframeinterval: ""
+  udmidletimeout: ""
+  udmkeepaliveinterval: ""
+  udmmergelog: ""
+  udmlevel: ""
+  udmmodetype: ""
+  udmmsgsuppressionlist: ""
+  udmdelay: ""
+  udmnetworkfaulttolerant: ""
+  udmopenretry: ""
+  udmopenretrycount: ""
+  udmopenretryinterval: ""
+  udmoutboundip: ""
+  udmplfdirectory: ""
+  udmprivatekey: ""
+  udmprivatekeypwd: ""
+  udmproxycertificates: ""
+  udmretrycount: ""
+  udmretryinterval: ""
+  udmrecvbufssize: ""
+  udmport: ""
+  udmsafkeyring: ""
+  udmsafkeyringlabel: ""
+  udmscript: ""
+  udmoptions: ""
+  udmsendbufssize: ""
+  udmserverstopconditions: ""
+  udmsizeattrib: ""
+  udmsslimplementation: ""
+  udmsystemid: ""
+  udmtcpnodelay: ""
+  udmtcprecvbuffer: ""
+  udmtcpsendbuffer: ""
+  udmtracefilelines: ""
+  udmtracetable: ""
+  udmucmdpath: ""
+  udmumask: ""
+  udmusapdpath: ""
+  udmverifyhostname: ""
+  # OTEL
+  otelenabletracing: ""
+  otelexportmetrics: ""
+  otelmetricsendpoint: ""
+  otelmetricsexportinterval: ""
+  otelservicename: ""
+  otelsslcacertpath: ""
+  otelsslclientcertpath: ""
+  otelsslclientkeypath: ""
+  otelsslinsecureskipverify: ""
+  oteltraceendpoint: ""
+
+############################################ UC ConfigMap values #############################
+# database.* values take precedence over ucConfig.ucDb* for DB connection settings.
+# Empty strings are omitted from the ConfigMap. Set only values you need to override.
+ucConfig:
+  ucSessionValidation: ""
+  ucDbRdbms: ""        # deprecated: use database.type instead
+  ucDbUrl: ""          # deprecated: use database.{host,port,name,type} instead
+  ucDbName: ""         # deprecated: use database.name instead
+  ucDbUser: ""         # deprecated: use database.user instead
+  ucNodeTransient: true
+  ucOmsServiceTimeout: 30
+  ucNodeHeartbeatThreshold: 30
+  # LDAP
+  ucLdapServer: ""
+  ucLdapDomain: ""
+  ucLdapBindDN: ""
+  ucLdapBindPassword: ""
+  ucLdapUserSearchBase: ""
+  ucLdapGroupSearchBase: ""
+  ucLdapUserObjectClass: ""
+  ucLdapGroupObjectClass: ""
+  ucLdapUserSearchFilter: ""
+  ucLdapGroupSearchFilter: ""
+  ucLdapSynchronizationEnabled: ""
+  ucLdapGroupsFilterIndirect: ""
+  ucLdapGroupsSingleParent: ""
+  ucLdapGroupsUpdateMembers: ""
+  ucLdapUsersSyncByRange: ""
+  ucLdapUsersSyncIndirect: ""
+  ucLdapUsersUpdateMembershipsOnLogin: ""
+  # SAML
+  ucSamlLogLevel: ""
+  ucSamlMetadataRefreshInterval: ""
+  ucSamlSignatureAlgorithm: ""
+  ucSamlAuthnRequestForceAuthn: ""
+  # Truststore
+  ucTrustManagerTruststore: ""
+  ucTrustManagerTruststoreType: ""
+  ucTrustManagerTruststoreProvider: ""
+  ucTrustManagerTruststorePassword: ""
+  ucTrustManagerTruststorePasswordEncrypted: ""
+  # Keystore
+  ucKeymanagerAlgorithm: ""
+  ucKeymanagerClientAlias: ""
+  ucKeymanagerKeystore: ""
+  ucKeymanagerKeystorePassword: ""
+  ucKeymanagerProvider: ""
+  # OpenTelemetry
+  ucOtelSdkDisabled: ""
+  ucOtelTracesExporter: ""
+  ucOtelMetricsExporter: ""
+  ucOtelExporterOtlpServiceName: ""
+  ucOtelExporterOtlpProtocol: ""
+  ucOtelExporterOtlpEndpoint: ""
+  ucOtelExporterOtlpTracesEndpoint: ""
+  ucOtelExporterOtlpMetricsEndpoint: ""
+  ucOtelExporterOtlpTimeout: ""
+  ucOtelExporterOtlpHeaders: ""
+  ucOtelExporterOtlpTracesHeaders: ""
+  ucOtelExporterOtlpMetricHeaders: ""
+  ucOtelExporterOtlpCompressions: ""
+  ucOtelExporterOtlpTracesCompression: ""
+  ucOtelExporterOtlpMetricsCompression: ""
+  ucOtelExporterOtlpTracesTimeout: ""
+  ucOtelExporterOtlpMetricsTimeout: ""
+  ucOtelExporterOtlpMetricsTemporalityPreference: ""
+  ucOtelExporterOtlpMetricsDefaultHistogramAggregation: ""
+  # Prometheus
+  ucPrometheusMetricsHistoryTotal: ""
+  ucPrometheusMetricsTaskInstanceDuration: ""
+  ucPrometheusMetricsTaskInstanceEarlyFinish: ""
+  ucPrometheusMetricsTaskInstanceLateFinish: ""
+  ucPrometheusMetricsTaskInstanceLateStart: ""
+  ucPrometheusMetricsTaskInstanceLaunchTotal: ""
+  ucPrometheusMetricsUniversalEventTotal: ""
+  ucPrometheusMetricsTaskInstanceDurationSecondsBucket: ""
+  # General
+  jdkXmlEntityExpansionLimit: ""
+  ucDateFormats: ""
+  ucLoggingAppenders: ""
+  ucServletPort: ""
+  ucActionEmailNotificationAttachOutputSubscriptionTimeoutInSeconds: ""
+  ucMbeanCatalinaManagerName: ""
+  ucOverdueTimerStartupThreshold: ""
+  ucTaskSAPRPCTimeout: ""
+  ucTaskzosViewEditJCLTimeout: ""
+  ucTrustmanagerAlgorithm: ""
+  ucTrustmanagerProvider: ""
+  ucTrustmanagerSSLProtocols: ""
+  ucUISessionsTimeout: ""
+  ucWebServiceAllowUnknownProperties: ""
+  ucWebServiceHTTPClientSocketKeepAlive: ""
+  extensionmaxbytes: ""
+
+############################################ Optional UA subchart ############################
+############################################ Helm test hooks ################################
+# -- Set false in ci/ values to skip helm test hooks when the application image is not available
+test:
+  enabled: true
+
+############################################ Optional UA subchart ############################
+agent:
+  # -- Set true to deploy the Universal Agent as a subchart alongside the controller
+  enabled: false

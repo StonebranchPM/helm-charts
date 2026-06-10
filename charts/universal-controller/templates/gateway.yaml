@@ -1,0 +1,44 @@
+{{- $isOCP := include "uc.isOpenShift" . | eq "true" -}}
+{{- if and .Values.istio.enabled (not $isOCP) }}
+apiVersion: networking.istio.io/v1
+kind: Gateway
+metadata:
+  name: '{{ .Release.Name }}-uac-gateway'
+  namespace: {{ .Release.Namespace | quote }}
+spec:
+  selector:
+    istio: ingressgateway
+  servers:
+    - port:
+        number: 80
+        name: http
+        protocol: HTTP
+      hosts:
+        - {{ .Values.istio.host | quote }}
+    - port:
+        number: 443
+        name: https-web
+        protocol: HTTPS
+      tls:
+        mode: SIMPLE
+        credentialName: {{ .Values.istio.hostCredentials }}
+        minProtocolVersion: {{ .Values.istio.TLSProtocol | quote }}
+      hosts:
+        - {{ .Values.istio.host | quote }}
+    - port:
+        number: {{ .Values.istio.omsConnectionPort }}
+        name: tls-oms
+        protocol: TLS
+      tls:
+        mode: PASSTHROUGH
+      hosts:
+        - {{ .Values.istio.host | quote }}
+    - port:
+        number: {{ .Values.istio.udmConnectionPort }}
+        name: udm-tls
+        protocol: TLS
+      tls:
+        mode: PASSTHROUGH
+      hosts:
+        - {{ .Values.istio.host | quote }}
+{{- end }}

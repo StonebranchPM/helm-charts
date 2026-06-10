@@ -1,0 +1,249 @@
+#################################################################################################
+# universal-agent — values
+# Platform reference:
+#   platform: aks       → WorkloadIdentity SA, Istio Gateway+VirtualService (set istio.enabled=true)
+#   platform: openshift → OpenShift Route, SNI configmap, hostname-appendum post-install Job
+#   platform: native    → plain ClusterIP Service only
+#################################################################################################
+
+# -- Platform mode: aks | openshift | native
+platform: "aks"
+
+nameOverride: ""
+fullnameOverride: ""
+
+############################################ Image ############################################
+image:
+  # -- Container image repository
+  repository: stonebranch/universal-agent
+  # -- Image tag. Avoid `latest` in production; pin to an explicit version.
+  tag: "7.9.0.0"
+  # -- Image pull policy
+  pullPolicy: IfNotPresent
+
+# -- List of pre-existing imagePullSecret names (kubernetes.io/dockerconfigjson type).
+# Create your secret first: kubectl create secret docker-registry my-secret ...
+# @default -- []
+imagePullSecrets: []
+# - name: my-registry-secret
+
+############################################ Workload #########################################
+# -- Number of UA pod replicas
+replicaCount: 1
+
+# -- CPU and memory resource requests/limits for the UA container
+resources:
+  requests:
+    memory: "512Mi"
+    cpu: "250m"
+  limits:
+    memory: "1Gi"
+    cpu: "1000m"
+
+############################################ Storage ##########################################
+persistence:
+  # -- Enable a PersistentVolumeClaim for UA spool/state data
+  enabled: true
+  # -- StorageClass name. Leave empty to use the cluster default.
+  storageClassName: "default"
+  # -- Storage request size
+  size: 1Gi
+  # -- PVC access mode
+  accessMode: ReadWriteOnce
+  # -- Name of a pre-existing PVC to use. When set, storageClassName is ignored
+  # and no new PVC is created.
+  existingClaim: ""
+
+############################################ Pod configuration ################################
+# -- Additional annotations to add to the UA pod
+podAnnotations: {}
+
+# -- Additional labels added to every resource rendered by this chart
+commonLabels: {}
+
+# -- Node selector for pod scheduling
+nodeSelector: {}
+
+# -- Tolerations for pod scheduling
+tolerations: []
+
+# -- Affinity rules for pod scheduling
+affinity: {}
+
+# -- Topology spread constraints for pod scheduling
+topologySpreadConstraints: []
+
+############################################ Escape hatches ###################################
+# -- Additional environment variables injected directly into the UA container
+extraEnv: []
+# - name: MY_CUSTOM_VAR
+#   value: "my-value"
+# - name: FROM_SECRET
+#   valueFrom:
+#     secretKeyRef:
+#       name: my-secret
+#       key: my-key
+
+# -- Additional volumes to attach to the pod
+extraVolumes: []
+
+# -- Additional volume mounts for the UA container
+extraVolumeMounts: []
+
+# -- Arbitrary Kubernetes objects to render alongside the chart resources
+extraObjects: []
+# - apiVersion: v1
+#   kind: ConfigMap
+#   metadata:
+#     name: my-extra-config
+#   data:
+#     key: value
+
+############################################ Security context ################################
+# Fully overridable; use these to comply with OpenShift restricted-v2 SCC.
+# On OCP, omit runAsUser/runAsGroup — the SCC assigns them from the namespace UID range.
+securityContext:
+  pod:
+    runAsNonRoot: true
+    seccompProfile:
+      type: RuntimeDefault
+  container:
+    allowPrivilegeEscalation: false
+    capabilities:
+      drop: [ALL]
+    # UA writes to /var/opt/universal; set true only when all write paths are emptyDir-mounted
+    readOnlyRootFilesystem: false
+
+############################################ Probes ###########################################
+# Exec-based probes check that at least one UA process (uagsrv/omssrv/uemsrv) is running.
+startupProbe:
+  initialDelaySeconds: 10
+  periodSeconds: 10
+  timeoutSeconds: 5
+  # 10 + 30*10 = 310s maximum startup window
+  failureThreshold: 30
+
+livenessProbe:
+  initialDelaySeconds: 10
+  periodSeconds: 10
+  timeoutSeconds: 5
+  failureThreshold: 3
+
+readinessProbe:
+  initialDelaySeconds: 5
+  periodSeconds: 10
+  timeoutSeconds: 5
+  failureThreshold: 3
+
+############################################ High Availability ################################
+ha:
+  podAntiAffinity:
+    # -- Add a soft (preferredDuringScheduling) anti-affinity rule when replicaCount >= 2
+    enabled: true
+
+############################################ NetworkPolicy ###################################
+networkPolicy:
+  # -- Render a NetworkPolicy for the UA pod
+  enabled: false
+  # -- Additional custom ingress rules appended to the policy
+  additionalIngress: []
+  # -- Additional custom egress rules (allow-all egress by default when empty)
+  additionalEgress: []
+
+############################################ WorkloadIdentity (AKS) ###########################
+workloadIdentity:
+  # -- Enable Azure Workload Identity. Requires AKS cluster with WI webhook + a federated credential.
+  enabled: false
+  # -- Azure managed identity client ID
+  clientId: ""
+  # -- Name of the annotated ServiceAccount; created automatically when enabled.
+  serviceAccountName: ""
+
+serviceAccount:
+  name: ""
+
+############################################ Istio ############################################
+# istio.enabled is independent of platform — set true when Istio is installed
+istio:
+  # -- Enable Istio Gateway + VirtualService for the UA
+  enabled: false
+  # -- External hostname exposed via the Istio Gateway
+  host: ""
+  # -- Name of the TLS Secret for the Istio Gateway credential
+  hostCredentials: ""
+  # -- TLS protocol version for the Istio Gateway
+  tlsProtocol: "TLSV1_2"
+  # -- External UDM port exposed through the Istio Gateway
+  udmConnectionPort: 446
+  # -- Internal UDM port on the Istio VirtualService
+  udmConnectionPortInternal: 15446
+
+############################################ OpenShift TLS/SNI ###############################
+# Enables a post-install Job that reads the Route hostname and patches the SNI ConfigMap
+tlssnihostnameref:
+  enabled: false
+
+############################################ UA / OMS ConfigMap values #######################
+# Empty strings are omitted from the ConfigMap (uac.emitIfSet helper).
+# Set only the values you need to override.
+uaConfig:
+  # ------- UAG -------
+  # -- UAG agent cluster assignments
+  uagagentclusters: ""
+  # -- Business service membership list
+  businessservices: ""
+  extensionacceptlist: ""
+  extensioncanceltimeout: ""
+  extensiondeployonregistration: ""
+  extensionpythonlist: ""
+  # -- Agent net name (UAGNETNAME). Leave empty for OMS auto-assignment.
+  netname: ""
+  # -- OMS server address (format: port@host)
+  omsServers: ""
+  processcanceltimeout: ""
+  uagAutostart: "yes"
+  uagLoglvl: ""
+  uagLevel: ""
+  # -- OCP: auto-populated by hostname-appendum Job when tlssnihostnameref.enabled
+  uagtlssnihostname: ""
+  # ------- OMS -------
+  omsAutostart: "no"
+  omsAutoStart: "no"      # alias — OCP service conditional uses this key
+  codepage: ""
+  omsDNSCacheTimeout: ""
+  omsIndexCacheSize: ""
+  omsMaxConnections: ""
+  maxfilesize: ""
+  maxmessagesize: ""
+  omsMaxSSLProtocol: ""
+  omsLanguage: ""
+  omsMinSSLProtocol: ""
+  chunksize: ""
+  omsMSGCleanupInterval: ""
+  omsMSGDataFlushInt: ""
+  omsMSGSuppressionList: ""
+  omsRequiresSSL: ""
+  omsServiceBacklog: ""
+  omsSVCIAddr: ""
+  omsSVCIPort: ""
+  omsServiceTimeout: ""
+  sslcipherlist: ""
+  sslciphersuites: ""
+  omstracefilelines: ""
+  omstracetable: ""
+  # ------- OTEL -------
+  otelenabletracing: ""
+  otelexportmetrics: ""
+  otelmetricsendpoint: ""
+  otelmetricsexportinterval: ""
+  otelservicename: ""
+  otelsslcacertpath: ""
+  otelsslclientcertpath: ""
+  otelsslclientkeypath: ""
+  otelsslinsecureskipverify: ""
+  oteltraceendpoint: ""
+
+############################################ Helm test hooks ################################
+# -- Set false in ci/ values to skip helm test hooks when the application image is not available
+test:
+  enabled: true

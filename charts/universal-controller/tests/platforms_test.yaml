@@ -1,0 +1,181 @@
+suite: universal-controller platform modes
+release:
+  name: test-release
+  namespace: stonebranch
+
+tests:
+  # ─── openshift ────────────────────────────────────────────────────────────────
+
+  - it: openshift — 3 Routes rendered (uc, oms, udm)
+    template: route.yaml
+    set:
+      platform: openshift
+      route.enabled: true
+    asserts:
+      - hasDocuments:
+          count: 3
+      - isKind:
+          of: Route
+
+  - it: openshift — Routes suppressed when route.enabled=false
+    template: route.yaml
+    set:
+      platform: openshift
+      route.enabled: false
+    asserts:
+      - hasDocuments:
+          count: 0
+
+  - it: openshift — no Istio Gateway
+    template: gateway.yaml
+    set:
+      platform: openshift
+    asserts:
+      - hasDocuments:
+          count: 0
+
+  - it: openshift — no Ingress
+    template: ingress.yaml
+    set:
+      platform: openshift
+    asserts:
+      - hasDocuments:
+          count: 0
+
+  # ─── native ───────────────────────────────────────────────────────────────────
+
+  - it: native — Deployment renders for UC
+    template: uc-deployment.yaml
+    set:
+      platform: native
+    asserts:
+      - isKind:
+          of: Deployment
+
+  - it: native + statefulSet.enabled — UC renders as StatefulSet
+    template: uc-deployment.yaml
+    set:
+      platform: native
+      statefulSet.enabled: true
+    asserts:
+      - isKind:
+          of: StatefulSet
+
+  - it: native + statefulSet.enabled — OMS renders as StatefulSet
+    template: oms-deployment.yaml
+    set:
+      platform: native
+      statefulSet.enabled: true
+    asserts:
+      - isKind:
+          of: StatefulSet
+
+  - it: native — Ingress rendered when ingress.enabled
+    template: ingress.yaml
+    set:
+      platform: native
+      ingress.enabled: true
+      ingress.host: uc.example.com
+    asserts:
+      - hasDocuments:
+          count: 1
+      - isKind:
+          of: Ingress
+
+  - it: native — no Route
+    template: route.yaml
+    set:
+      platform: native
+    asserts:
+      - hasDocuments:
+          count: 0
+
+  # ─── aks ──────────────────────────────────────────────────────────────────────
+
+  - it: aks — Istio Gateway rendered when istio.enabled
+    template: gateway.yaml
+    set:
+      platform: aks
+      istio.enabled: true
+      istio.host: uc.example.com
+      istio.hostCredentials: uc-tls
+    asserts:
+      - hasDocuments:
+          count: 1
+
+  - it: aks — no Gateway when istio.enabled=false
+    template: gateway.yaml
+    set:
+      platform: aks
+      istio.enabled: false
+    asserts:
+      - hasDocuments:
+          count: 0
+
+  - it: aks — KeyVault SecretProviderClass rendered when keyVault.enabled
+    template: keyvault.yaml
+    set:
+      platform: aks
+      keyVault.enabled: true
+      keyVault.name: my-vault
+      keyVault.managedIdentityClientId: client-id
+      keyVault.tenantId: tenant-id
+    asserts:
+      - hasDocuments:
+          count: 1
+
+  # ─── OMS ─────────────────────────────────────────────────────────────────────
+
+  - it: OMS Deployment rendered when oms.enabled
+    template: oms-deployment.yaml
+    asserts:
+      - hasDocuments:
+          count: 1
+      - isKind:
+          of: Deployment
+
+  - it: OMS NOT rendered when oms.enabled=false
+    template: oms-deployment.yaml
+    set:
+      oms.enabled: false
+    asserts:
+      - hasDocuments:
+          count: 0
+
+  - it: OMS PVC rendered when oms.enabled and persistence.enabled
+    template: oms-pvc.yaml
+    asserts:
+      - hasDocuments:
+          count: 1
+
+  - it: OMS PVC NOT rendered when persistence.existingClaim set
+    template: oms-pvc.yaml
+    set:
+      oms.persistence.existingClaim: my-pvc
+    asserts:
+      - hasDocuments:
+          count: 0
+
+  # ─── NetworkPolicy / ServiceMonitor ──────────────────────────────────────────
+
+  - it: NetworkPolicy NOT rendered by default
+    template: networkpolicy.yaml
+    asserts:
+      - hasDocuments:
+          count: 0
+
+  - it: NetworkPolicy rendered when enabled
+    template: networkpolicy.yaml
+    set:
+      networkPolicy.enabled: true
+    asserts:
+      - hasDocuments:
+          count: 1
+      - isKind:
+          of: NetworkPolicy
+
+  - it: ServiceMonitor NOT rendered by default (CRD absent)
+    template: servicemonitor.yaml
+    asserts:
+      - hasDocuments:
+          count: 0

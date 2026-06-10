@@ -1,0 +1,21 @@
+{{- if gt (int .Values.uc.replicaCount) 1 }}
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: {{ .Release.Name }}-uc
+  namespace: {{ include "uc.namespace" . }}
+  labels:
+    {{- include "universal-controller.labels" . | nindent 4 }}
+    {{- with .Values.commonLabels }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+    app.kubernetes.io/component: uc
+  annotations:
+    helm.sh/chart-note: "UC is active/passive; minAvailable=1 prevents full outage during voluntary disruptions"
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      {{- include "universal-controller.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: uc
+{{- end }}

@@ -1,0 +1,40 @@
+{{- $isAKS := include "ua.isAKS" . | eq "true" -}}
+{{- $isOCP := include "ua.isOpenShift" . | eq "true" -}}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: '{{ .Release.Name }}-ua-configmap'
+  namespace: {{ .Release.Namespace }}
+data:
+  {{- if $isAKS }}
+  UAGTLSSNIHOSTNAME: "{{ .Values.istio.udmConnectionPort }}@{{ .Values.istio.host }}:{{ .Values.istio.host }}"
+  {{- else }}
+  UAGTLSSNIHOSTNAME: {{ default "" .Values.uaConfig.uagtlssnihostname | quote }}
+  {{- end }}
+  UAGTRANSIENT: "yes"
+  {{ include "uac.emitIfSet" (dict "name" "UAGAGENTCLUSTERS" "value" .Values.uaConfig.uagagentclusters) | nindent 2 }}
+  {{ include "uac.emitIfSet" (dict "name" "UAGBUSINESSSERVICES" "value" .Values.uaConfig.businessservices) | nindent 2 }}
+  {{ include "uac.emitIfSet" (dict "name" "UAGEXTACCEPTLIST" "value" .Values.uaConfig.extensionacceptlist) | nindent 2 }}
+  {{ include "uac.emitIfSet" (dict "name" "UAGEXTCANCELTIMEOUT" "value" .Values.uaConfig.extensioncanceltimeout) | nindent 2 }}
+  {{ include "uac.emitIfSet" (dict "name" "UAGEXTDEPLOYONREG" "value" .Values.uaConfig.extensiondeployonregistration) | nindent 2 }}
+  {{ include "uac.emitIfSet" (dict "name" "UAGEXTPYTHONLIST" "value" .Values.uaConfig.extensionpythonlist) | nindent 2 }}
+  {{ include "uac.emitIfSet" (dict "name" "UAGNETNAME" "value" .Values.uaConfig.netname) | nindent 2 }}
+  {{ include "uac.emitIfSet" (dict "name" "UAGOMSSERVERS" "value" .Values.uaConfig.omsServers) | nindent 2 }}
+  {{ include "uac.emitIfSet" (dict "name" "UAGPRCCANCELTIMEOUT" "value" .Values.uaConfig.processcanceltimeout) | nindent 2 }}
+  {{ include "uac.emitIfSet" (dict "name" "UAGAUTOSTART" "value" .Values.uaConfig.uagAutostart) | nindent 2 }}
+  {{ include "uac.emitIfSet" (dict "name" "UAGLOGLVL" "value" .Values.uaConfig.uagLoglvl) | nindent 2 }}
+  {{ include "uac.emitIfSet" (dict "name" "UAGLEVEL" "value" .Values.uaConfig.uagLevel) | nindent 2 }}
+
+  {{ include "uac.emitIfSet" (dict "name" "OMSCODEPAGE" "value" .Values.uaConfig.codepage) | nindent 2 }}
+  {{ include "uac.emitIfSet" (dict "name" "OMSDNSCACHETIMEOUT" "value" .Values.uaConfig.omsDNSCacheTimeout) | nindent 2 }}
+  {{ include "uac.emitIfSet" (dict "name" "OMSINDEXCACHESIZE" "value" .Values.uaConfig.omsIndexCacheSize) | nindent 2 }}
+  {{ include "uac.emitIfSet" (dict "name" "OMSMAXCONNECTIONS" "value" .Values.uaConfig.omsMaxConnections) | nindent 2 }}
+  {{ include "uac.emitIfSet" (dict "name" "OMSMAXDATAFILESIZE" "value" .Values.uaConfig.maxfilesize) | nindent 2 }}
+  {{ include "uac.emitIfSet" (dict "name" "OMSMAXMSGSIZE" "value" .Values.uaConfig.maxmessagesize) | nindent 2 }}
+  {{ include "uac.emitIfSet" (dict "name" "OMSMAXSSLPROTOCOL" "value" .Values.uaConfig.omsMaxSSLProtocol) | nindent 2 }}
+  {{ include "uac.emitIfSet" (dict "name" "OMSLANG" "value" .Values.uaConfig.omsLanguage) | nindent 2 }}
+  {{ include "uac.emitIfSet" (dict "name" "OMSMINSSLPROTOCOL" "value" .Values.uaConfig.omsMinSSLProtocol) | nindent 2 }}
+  {{ include "uac.emitIfSet" (dict "name" "OMSMSGCHUNKSIZE" "value" .Values.uaConfig.chunksize) | nindent 2 }}
+  {{ include "uac.emitIfSet" (dict "name" "OMSMSGCLEANUPINTERVAL" "value" .Values.uaConfig.omsMSGCleanupInterval) | nindent 2 }}
+  {{ include "uac.emitIfSet" (dict "name" "OMSMSGDATAFLUSHINT" "value" .Values.uaConfig.omsMSGDataFlushInt) | nindent 2 }}
+  {{ include "uac.emitIfSet" (dict "name" "OMSAUTOSTART" "value" .Values.uaConfig.omsAutostart) | nindent 2 }}
