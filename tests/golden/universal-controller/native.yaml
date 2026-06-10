@@ -1,0 +1,357 @@
+---
+# Source: universal-controller/templates/uc-secret.yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: test-release-passwords
+  namespace: default
+  labels:
+    app.kubernetes.io/name: ""
+    app.kubernetes.io/instance: test-release
+    app.kubernetes.io/version: 
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/component: secrets
+  annotations:
+    immutable: "true"
+type: Opaque
+data:
+  password: ""
+  password-keystore: ""
+  password-truststore: ""
+  UC_TRUSTMANAGER_TRUSTSTORE_PASSWORD_ENCRYPTED: ""
+---
+# Source: universal-controller/templates/oms-configmap.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: 'test-release-oms-configmap'
+  namespace: default
+data:
+  UAGTRANSIENT: "yes"
+  UAGAUTOSTART: "yes"
+  OMSAUTOSTART: "no"
+---
+# Source: universal-controller/templates/uc-configmap.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: 'test-release-uc-configmap'
+  namespace: default
+  labels:
+    app.kubernetes.io/name: ""
+    app.kubernetes.io/instance: test-release
+    app.kubernetes.io/version: 
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/component: uc-config
+data:
+  UC_NODE_TRANSIENT: "true"
+  UC_OMS_SERVICE_TIMEOUT: "30"
+  UC_NODE_HEARTBEAT_STALE__THRESHOLD__IN__SECONDS: "30"
+---
+# Source: universal-controller/templates/oms-pvc.yaml
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: test-release-oms-pvc
+  namespace: default
+  labels:
+    app.kubernetes.io/name: ""
+    app.kubernetes.io/instance: test-release
+    app.kubernetes.io/version: 
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/component: oms-storage
+  annotations:
+    "helm.sh/resource-policy": keep
+spec:
+  accessModes: [ ReadWriteOnce ]
+  volumeMode: Filesystem
+  resources:
+    requests:
+      storage: 1Gi
+  storageClassName: "default"
+---
+# Source: universal-controller/templates/rbac.yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  namespace: default
+  name: 'universal-controller-test-release-role'
+  labels:
+    app.kubernetes.io/name: ""
+    app.kubernetes.io/instance: test-release
+    app.kubernetes.io/version: 
+    app.kubernetes.io/managed-by: Helm
+rules:
+  - apiGroups: [""]
+    resources: ["configmaps", "secrets"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: [""]
+    resources: ["pods", "pods/log"]
+    verbs: ["get", "list", "watch"]
+---
+# Source: universal-controller/templates/rbac.yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: 'universal-controller-test-release-rolebinding'
+  namespace: default
+  labels:
+    app.kubernetes.io/name: ""
+    app.kubernetes.io/instance: test-release
+    app.kubernetes.io/version: 
+    app.kubernetes.io/managed-by: Helm
+subjects:
+  - kind: ServiceAccount
+    name: default
+    namespace: default
+roleRef:
+  kind: Role
+  name: 'universal-controller-test-release-role'
+  apiGroup: rbac.authorization.k8s.io
+---
+# Source: universal-controller/templates/service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: test-release-oms-service
+  namespace: default
+  labels:
+    app.kubernetes.io/name: ""
+    app.kubernetes.io/instance: test-release
+    app.kubernetes.io/version: 
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/component: oms-service
+spec:
+  selector:
+    app.kubernetes.io/name: ""
+    app.kubernetes.io/instance: test-release
+    app.kubernetes.io/component: oms
+  ports:
+    - name: oms
+      port: 7878
+      targetPort: 7878
+      protocol: TCP
+    - name: udm
+      port: 7887
+      targetPort: 7887
+      protocol: TCP
+---
+# Source: universal-controller/templates/service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: test-release-uc-service
+  namespace: default
+  labels:
+    app.kubernetes.io/name: ""
+    app.kubernetes.io/instance: test-release
+    app.kubernetes.io/version: 
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/component: uc-service
+spec:
+  selector:
+    app.kubernetes.io/name: ""
+    app.kubernetes.io/instance: test-release
+    app.kubernetes.io/component: uc
+  ports:
+    - name: test-release-uc-port
+      protocol: TCP
+      port: 80
+      targetPort: 8080
+---
+# Source: universal-controller/templates/oms-deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: test-release-oms
+  namespace: default
+  labels:
+    app.kubernetes.io/name: ""
+    app.kubernetes.io/instance: test-release
+    app.kubernetes.io/version: 
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/component: oms
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: ""
+      app.kubernetes.io/instance: test-release
+      app.kubernetes.io/component: oms
+  template:
+    metadata:
+      annotations:
+        sidecar.istio.io/inject: "false"
+      labels:
+        app.kubernetes.io/name: ""
+        app.kubernetes.io/instance: test-release
+        app.kubernetes.io/component: oms
+    spec:
+      serviceAccountName: default
+      securityContext:
+        fsGroup: 1000
+        runAsGroup: 1000
+        runAsNonRoot: true
+        runAsUser: 1000
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: uac-oms
+          image: ":"
+          imagePullPolicy: IfNotPresent
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+              - ALL
+          ports:
+            - containerPort: 7878
+            - containerPort: 7887
+          envFrom:
+            - configMapRef:
+                name: test-release-oms-configmap
+          volumeMounts:
+            - name: oms-storage
+              mountPath: "/var/opt/universal/spool/oms"
+          resources:
+            limits:
+              cpu: 1000m
+              memory: 1Gi
+            requests:
+              cpu: 250m
+              memory: 1Gi
+          startupProbe:
+            exec:
+              command: [sh, -c, "pgrep -x omssrv >/dev/null || pgrep -x ubroker >/dev/null || pgrep -x uagsrv >/dev/null || pgrep -x uemsrv >/dev/null"]
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 30
+          livenessProbe:
+            exec:
+              command: [sh, -c, "pgrep -x omssrv >/dev/null || pgrep -x ubroker >/dev/null || pgrep -x uagsrv >/dev/null || pgrep -x uemsrv >/dev/null"]
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+          readinessProbe:
+            exec:
+              command: [sh, -c, "pgrep -x omssrv >/dev/null || pgrep -x ubroker >/dev/null || pgrep -x uagsrv >/dev/null || pgrep -x uemsrv >/dev/null"]
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+      volumes:
+        - name: oms-storage
+          persistentVolumeClaim:
+            claimName: test-release-oms-pvc
+---
+# Source: universal-controller/templates/uc-deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: 'test-release-uc'
+  namespace: default
+  labels:
+    app.kubernetes.io/name: ""
+    app.kubernetes.io/instance: test-release
+    app.kubernetes.io/version: 
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/component: uc
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: ""
+      app.kubernetes.io/instance: test-release
+      app.kubernetes.io/component: uc
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: ""
+        app.kubernetes.io/instance: test-release
+        app.kubernetes.io/component: uc
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8080"
+        prometheus.io/path: "/uc/resources/metrics"
+        sidecar.istio.io/inject: "true"
+        checksum/config: 33552caccb112a874f8eca01fdab4dbc7b03431e767befdc5becd77f6ef63fbc
+        checksum/passwords: f505355a4e554f0b10381e2c0c2f4b783be55863490b98629247b2d4880d92c0
+    spec:
+      serviceAccountName: default
+      securityContext:
+        runAsNonRoot: true
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: uc-container
+          image: ":"
+          imagePullPolicy: IfNotPresent
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+              - ALL
+          ports:
+            - containerPort: 8080
+          envFrom:
+            - configMapRef:
+                name: test-release-uc-configmap
+          env:
+            - name: UC_DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: test-release-passwords
+                  key: password
+            - name: UC_TRUSTMANAGER_TRUSTSTORE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: test-release-passwords
+                  key: password-truststore
+            - name: UC_TRUSTMANAGER_TRUSTSTORE_PASSWORD_ENCRYPTED
+              valueFrom:
+                secretKeyRef:
+                  name: test-release-passwords
+                  key: UC_TRUSTMANAGER_TRUSTSTORE_PASSWORD_ENCRYPTED
+            - name: UC_KEYMANAGER_KEYSTORE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: test-release-passwords
+                  key: password-keystore
+            - name: JAVA_TOOL_OPTIONS
+              value: "-XX:MaxRAMPercentage=75"
+          resources:
+            limits:
+              cpu: 1000m
+              memory: 2Gi
+            requests:
+              cpu: 250m
+              memory: 1Gi
+          startupProbe:
+            httpGet:
+              path: /uc/resources/clusternode/healthcheck
+              port: 8080
+              scheme: HTTP
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 30
+          readinessProbe:
+            httpGet:
+              path: /uc/resources/clusternode/healthcheck
+              port: 8080
+              scheme: HTTP
+            initialDelaySeconds: 20
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 6
+          livenessProbe:
+            httpGet:
+              path: /uc/resources/clusternode/healthcheck
+              port: 8080
+              scheme: HTTP
+            initialDelaySeconds: 120
+            periodSeconds: 20
+            timeoutSeconds: 5
+            failureThreshold: 5

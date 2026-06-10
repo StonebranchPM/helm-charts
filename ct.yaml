@@ -1,0 +1,16 @@
+# chart-testing (ct) configuration
+# https://github.com/helm/chart-testing
+
+# Consolidated charts only — legacy flat-layout dirs handled by the helm lint job
+chart-dirs:
+  - charts
+
+# Lint configuration file
+lint-conf: lintconf.yaml
+
+# Helm extra args for ct install
+# --wait=false: don't block on pod readiness; kind tests validate API acceptance only
+helm-extra-args: "--timeout 120s --wait=false"
+
+# Target branch for chart change detection
+target-branch: main

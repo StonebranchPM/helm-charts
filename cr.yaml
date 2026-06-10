@@ -1,0 +1,17 @@
+# chart-releaser (cr) configuration
+# https://github.com/helm/chart-releaser
+
+# GitHub organisation and repo — used by cr index + cr upload
+owner: StonebranchPM
+git-repo: helm-charts
+
+# Charts live under charts/
+chart-dirs:
+  - charts
+
+# Upload .tgz packages to GitHub Releases and update gh-pages index
+# pages-branch is the default (gh-pages); set explicitly for clarity
+pages-branch: gh-pages
+
+# Include packages in the index push (keeps gh-pages index + tarballs consistent)
+packages-with-index: false

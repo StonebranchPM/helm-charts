@@ -1,0 +1,373 @@
+---
+# Source: ua-ocp/templates/configmap.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: 'test-release-ua-configmap'
+  namespace: default
+data: # OMS Configuration Map -- ONLY ENVIRONMENT VARIABLES SUPPORTED: Order of Components -> UAG -> OMS -> UBR -> UEM -> UDM
+  UAGTLSSNIHOSTNAME: ""
+  UAGTRANSIENT: "yes"
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  UAGAUTOSTART: "yes"
+  
+  
+  
+  
+
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  OMSAUTOSTART: "yes"
+---
+# Source: ua-ocp/templates/pvc.yaml
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: test-release-ua-pvc
+  namespace: default
+  labels:
+    app.kubernetes.io/name: ""
+    app.kubernetes.io/instance: test-release
+    app.kubernetes.io/version: 
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/component: oms-storage
+  annotations:
+    "helm.sh/resource-policy": keep
+spec:
+  accessModes: [ ReadWriteOnce ]
+  volumeMode: Filesystem
+  resources:
+    requests:
+      storage: 1Gi
+  storageClassName: ""
+---
+# Source: ua-ocp/templates/service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: test-release-udm-service
+  namespace: default
+  labels:
+    app.kubernetes.io/name: ""
+    app.kubernetes.io/instance: test-release
+    app.kubernetes.io/version: 
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/component: ua-service
+spec:
+  selector:
+    app.kubernetes.io/name: ""
+    app.kubernetes.io/instance: test-release
+    app.kubernetes.io/component: ua
+  ports:
+    - name: udm
+      port: 7887
+      targetPort: 7887
+      protocol: TCP
+---
+# Source: ua-ocp/templates/deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: test-release-ua
+  namespace: default
+  labels:
+    app.kubernetes.io/name: ""
+    app.kubernetes.io/instance: test-release
+    app.kubernetes.io/version: 
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/component: ua
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: ""
+      app.kubernetes.io/instance: test-release
+      app.kubernetes.io/component: ua
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: ""
+        app.kubernetes.io/instance: test-release
+        app.kubernetes.io/component: ua
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: uac-ua
+          image: "stonebranch/universal-agent:latest"
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 7878
+            - containerPort: 7887
+          envFrom:
+            - configMapRef:
+                name: test-release-ua-configmap
+          env:
+            - name: UAGTLSSNIHOSTNAME
+              valueFrom:
+                configMapKeyRef:
+                  name: 'test-release-uasni-configmap'
+                  key: UAGTLSSNIHOSTNAME
+          volumeMounts:                                                                       
+              - name: oms-storage
+                mountPath: "/var/opt/universal/spool/oms"
+          resources:
+            limits:
+              cpu: 1000m
+              memory: 1Gi
+            requests:
+              cpu: 1000m
+              memory: 1Gi
+          livenessProbe:
+            exec:
+              command:
+                - sh
+                - -c
+                - |
+                  pgrep -x omssrv >/dev/null ||
+                  pgrep -x ubroker >/dev/null ||
+                  pgrep -x uagsrv >/dev/null ||
+                  pgrep -x uemsrv >/dev/null
+            initialDelaySeconds: 10
+            periodSeconds: 10
+
+          readinessProbe:
+            exec:
+              command:
+                - sh
+                - -c
+                - |
+                  pgrep -x omssrv >/dev/null ||
+                  pgrep -x ubroker >/dev/null ||
+                  pgrep -x uagsrv >/dev/null ||
+                  pgrep -x uemsrv >/dev/null
+            initialDelaySeconds: 5
+            periodSeconds: 10            
+      volumes:
+        - name: oms-storage
+          persistentVolumeClaim:
+            claimName: test-release-ua-pvc
+---
+# Source: ua-ocp/templates/hostname-appendum.yaml
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: test-release-cm-patcher
+  namespace: default
+  annotations:
+    "helm.sh/hook": pre-install,post-upgrade
+    "helm.sh/hook-weight": "3"
+    "helm.sh/hook-delete-policy": before-hook-creation
+---
+# Source: ua-ocp/templates/configmap-sni.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: 'test-release-uasni-configmap'
+  namespace: default
+  annotations:
+    "helm.sh/hook": pre-install,pre-upgrade
+    "helm.sh/hook-weight": "2"
+    "helm.sh/hook-delete-policy": before-hook-creation
+data: # OMS Configuration Map -- ONLY ENVIRONMENT VARIABLES FOR SNI SUPPORT
+  UAGTLSSNIHOSTNAME: ""
+---
+# Source: ua-ocp/templates/hostname-appendum.yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: test-release-cm-patcher
+  namespace: default
+  annotations:
+    "helm.sh/hook": pre-install,post-upgrade
+    "helm.sh/hook-weight": "3"
+    "helm.sh/hook-delete-policy": before-hook-creation
+rules:
+  - apiGroups: ["route.openshift.io"]
+    resources: ["routes"]
+    verbs: ["get","list","watch"]
+  - apiGroups: [""]
+    resources: ["configmaps"]
+    verbs: ["get","patch","update"]
+  - apiGroups: ["apps"]
+    resources: ["deployments"]
+    verbs: ["get","patch","update"]
+---
+# Source: ua-ocp/templates/hostname-appendum.yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: test-release-cm-patcher
+  namespace: default
+  annotations:
+    "helm.sh/hook": pre-install,post-upgrade
+    "helm.sh/hook-weight": "3"
+    "helm.sh/hook-delete-policy": before-hook-creation
+subjects:
+  - kind: ServiceAccount
+    name: test-release-cm-patcher
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: test-release-cm-patcher
+---
+# Source: ua-ocp/templates/hostname-appendum.yaml
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: test-release-ua-route-cm-patch
+  namespace: default
+  annotations:
+    "helm.sh/hook": pre-install,post-upgrade
+    "helm.sh/hook-weight": "10"
+    "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
+spec:
+  backoffLimit: 2
+  template:
+    spec:
+      serviceAccountName: test-release-cm-patcher
+      restartPolicy: Never
+      containers:
+        - name: patcher
+          image: image-registry.openshift-image-registry.svc:5000/openshift/cli:latest  # <— built-in image
+          imagePullPolicy: IfNotPresent
+          command: ["/bin/bash","-lc"]
+          env:
+            - name: NS
+              value: "default"
+            - name: ROUTE_NAME
+              value: "test-release-udm-route"
+            - name: CONFIGMAP_NAME
+              value: "test-release-uasni-configmap"
+            - name: DEPLOYMENT_NAME
+              value: "test-release-ua"
+          args:
+            - |
+              set -euo pipefail
+              echo "Waiting for Route ${ROUTE_NAME} in ${NS} to be Admitted..."
+              for i in {1..180}; do
+                HOST="$(kubectl -n "${NS}" get route "${ROUTE_NAME}" -o jsonpath='{.status.ingress[0].host}' 2>/dev/null || true)"
+                ADMIT="$(kubectl -n "${NS}" get route "${ROUTE_NAME}" -o jsonpath='{.status.ingress[0].conditions[?(@.type=="Admitted")].status}' 2>/dev/null || true)"
+                if [[ -n "${HOST}" && "${ADMIT}" == "True" ]]; then
+                  echo "Route admitted with host: ${HOST}"
+                  break
+                fi
+                sleep 2
+              done
+              if [[ -z "${HOST:-}" ]]; then
+                echo "ERROR: Route host not available"; exit 1
+              fi
+
+              SNI="443@${HOST}:${HOST}"
+              echo "Patching ${CONFIGMAP_NAME} data.UAGTLSSNIHOSTNAME=${SNI}"
+              kubectl -n "${NS}" patch configmap "${CONFIGMAP_NAME}" --type merge \
+                -p "{\"data\":{\"UAGTLSSNIHOSTNAME\":\"${SNI}\"}}"
+---
+# Source: ua-ocp/templates/route.yaml
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: test-release-udm-route
+  namespace: default
+  labels:
+    app.kubernetes.io/name: ""
+    app.kubernetes.io/instance: test-release
+    app.kubernetes.io/version: 
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/component: ua-route
+  annotations:
+    "helm.sh/hook": pre-install,pre-upgrade
+    "helm.sh/hook-weight": "1"
+    "helm.sh/hook-delete-policy": before-hook-creation
+spec:
+  to:
+    kind: Service
+    name: test-release-ua-service
+  tls:
+    termination: passthrough
+    insecureEdgeTerminationPolicy: None

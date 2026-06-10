@@ -1,0 +1,88 @@
+name: Bug Report
+description: Something in the charts is broken or renders incorrectly
+labels: ["bug"]
+assignees:
+  - Len0608
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Please fill in as much detail as possible. Security vulnerabilities should
+        be reported privately — see [SUPPORT.md](../../SUPPORT.md).
+
+  - type: dropdown
+    id: chart
+    attributes:
+      label: Affected chart
+      options:
+        - helm_ua_v1.5.1-aks
+        - helm_ua_v1.5.1-ocp
+        - helm_uac_v1.0-native
+        - helm_uac_v1.4.1-ocp
+        - helm_uac_v1.5-aks
+    validations:
+      required: true
+
+  - type: dropdown
+    id: platform
+    attributes:
+      label: Platform
+      options:
+        - Native Kubernetes
+        - OpenShift
+        - AKS
+        - Other
+    validations:
+      required: true
+
+  - type: input
+    id: helm-version
+    attributes:
+      label: Helm version
+      placeholder: "helm version"
+    validations:
+      required: true
+
+  - type: input
+    id: k8s-version
+    attributes:
+      label: Kubernetes / OpenShift version
+      placeholder: "kubectl version --short"
+    validations:
+      required: true
+
+  - type: textarea
+    id: repro
+    attributes:
+      label: Steps to reproduce
+      description: |
+        Include the exact helm install/upgrade command and any -f / --set flags used.
+        Redact secrets.
+      value: |
+        ```bash
+        helm install ...
+        ```
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behaviour
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behaviour
+      description: Include error messages, pod events, or rendered template excerpts.
+    validations:
+      required: true
+
+  - type: textarea
+    id: values
+    attributes:
+      label: Relevant values.yaml overrides
+      description: Paste only the sections relevant to the bug. Redact secrets.
+      render: yaml

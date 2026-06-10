@@ -1,0 +1,448 @@
+---
+# Source: uc-aks/templates/image-secret.yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: test-release-secret-repo
+  namespace: default
+data:
+  .dockerconfigjson: eyJhdXRocyI6eyJodHRwczovL2luZGV4LmRvY2tlci5pby92MS8iOnsidXNlcm5hbWUiOiJuaWxzYnVlciIsInBhc3N3b3JkIjoiZGNrcl9wYXRfTVVjT2hxeElSc2RCQmlqTVFsWEdMUEN5TjNvIiwiYXV0aCI6ImJtbHNjMkoxWlhJNlpHTnJjbDl3WVhSZlRWVmpUMmh4ZUVsU2MyUkNRbWxxVFZGc1dFZE1VRU41VGpOdiJ9fX0=
+type: kubernetes.io/dockerconfigjson
+---
+# Source: uc-aks/templates/uc-secret.yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: test-release-passwords
+  namespace: default
+  labels:
+    app.kubernetes.io/name: uc-aks
+    app.kubernetes.io/instance: test-release
+    app.kubernetes.io/version: 7.9.0.0
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/component: secrets
+  annotations:
+    immutable: "true"
+type: Opaque
+data:
+  password: "cm9vdHBhc3N3b3Jk"
+  password-keystore: ""
+  password-truststore: ""
+  UC_TRUSTMANAGER_TRUSTSTORE_PASSWORD_ENCRYPTED: ""
+---
+# Source: uc-aks/templates/oms-configmap.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: 'test-release-oms-configmap'
+  namespace: default
+data: # OMS Configuration Map -- ONLY ENVIRONMENT VARIABLES SUPPORTED: Order of Components -> UAG -> OMS -> UBR -> UEM -> UDM
+  UAGTRANSIENT: "yes"
+  UAGAUTOSTART: "yes"
+  OMSAUTOSTART: "yes"
+---
+# Source: uc-aks/templates/uc-configmap.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: 'test-release-uc-configmap'
+  namespace: default
+  labels:
+    app.kubernetes.io/name: uc-aks
+    app.kubernetes.io/instance: test-release
+    app.kubernetes.io/version: 7.9.0.0
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/component: uc-config
+data:
+  UC_DB_RDBMS: "mysql"
+  UC_DB_NAME: "sb_test"
+  UC_DB_URL: "jdbc:mysql://mysql-service:3306/"
+  UC_DB_USER: "root"
+  UC_NODE_TRANSIENT: "true"
+  UC_OMS_SERVICE_TIMEOUT: "30"
+  UC_NODE_HEARTBEAT_STALE__THRESHOLD__IN__SECONDS: "30"
+  EXTENSIONMAXBYTES: "250000000"
+---
+# Source: uc-aks/templates/oms-pvc.yaml
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: test-release-oms-pvc
+  namespace: default
+  labels:
+    app.kubernetes.io/name: uc-aks
+    app.kubernetes.io/instance: test-release
+    app.kubernetes.io/version: 7.9.0.0
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/component: oms-storage
+  annotations:
+    "helm.sh/resource-policy": keep
+spec:
+  accessModes: [ ReadWriteOnce ]
+  volumeMode: Filesystem
+  resources:
+    requests:
+      storage: 1Gi
+  storageClassName: "default"
+---
+# Source: uc-aks/templates/rbac.yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  namespace: default
+  name: 'uc-aks-test-release-role'
+  labels:
+    app.kubernetes.io/name: uc-aks
+    app.kubernetes.io/instance: test-release
+    app.kubernetes.io/version: 7.9.0.0
+    app.kubernetes.io/managed-by: Helm
+rules:
+- apiGroups: [""]
+  resources: ["configmaps", "secrets"]
+  verbs: ["get", "list", "watch"]
+- apiGroups: [""]
+  resources: ["pods", "pods/log"]
+  verbs: ["get", "list", "watch"]
+---
+# Source: uc-aks/templates/rbac.yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: 'uc-aks-test-release-rolebinding'
+  namespace: default
+  labels:
+    app.kubernetes.io/name: uc-aks
+    app.kubernetes.io/instance: test-release
+    app.kubernetes.io/version: 7.9.0.0
+    app.kubernetes.io/managed-by: Helm
+subjects:
+- kind: ServiceAccount
+  name: default
+  namespace: default
+roleRef:
+  kind: Role
+  name: 'uc-aks-test-release-role'
+  apiGroup: rbac.authorization.k8s.io
+---
+# Source: uc-aks/templates/service.yaml
+# one service, two ports for OMS and UDM
+apiVersion: v1
+kind: Service
+metadata:
+  name: test-release-oms-service
+  namespace: default
+  labels:
+    app.kubernetes.io/name: uc-aks
+    app.kubernetes.io/instance: test-release
+    app.kubernetes.io/version: 7.9.0.0
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/component: oms-service
+spec:
+  selector:
+    app.kubernetes.io/name: uc-aks
+    app.kubernetes.io/instance: test-release
+    app.kubernetes.io/component: oms
+  ports:
+    - name: oms
+      port: 7878
+      targetPort: 7878
+      protocol: TCP
+    - name: udm
+      port: 7887
+      targetPort: 7887
+      protocol: TCP
+---
+# Source: uc-aks/templates/service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: test-release-uc-service
+  namespace: default
+  labels:
+    app.kubernetes.io/name: uc-aks
+    app.kubernetes.io/instance: test-release
+    app.kubernetes.io/version: 7.9.0.0
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/component: uc-service
+spec:
+  selector:
+    app.kubernetes.io/name: uc-aks
+    app.kubernetes.io/instance: test-release
+    app.kubernetes.io/component: uc
+  ports:
+    - name: test-release-uc-port
+      protocol: TCP
+      port: 80
+      targetPort: 8080
+---
+# Source: uc-aks/templates/oms-deployment.yaml
+# templates/oms-deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: test-release-oms
+  namespace: default
+  labels:
+    app.kubernetes.io/name: uc-aks
+    app.kubernetes.io/instance: test-release
+    app.kubernetes.io/version: 7.9.0.0
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/component: oms
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: uc-aks
+      app.kubernetes.io/instance: test-release
+      app.kubernetes.io/component: oms
+  template:
+    metadata:
+      annotations:
+        sidecar.istio.io/inject: "false"  # Disable Istio sidecar for TLS PASSTHROUGH
+      labels:
+        app.kubernetes.io/name: uc-aks
+        app.kubernetes.io/instance: test-release
+        app.kubernetes.io/component: oms
+    spec:
+      serviceAccountName: default
+      securityContext:
+        fsGroup: 1000
+        runAsUser: 1000
+        runAsGroup: 1000
+        runAsNonRoot: true
+      nodeSelector:
+        agentpool: ""
+        kubernetes.io/os: linux
+      containers:
+        - name: uac-oms
+          image: ":"
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 7878
+            - containerPort: 7887
+          envFrom:
+            - configMapRef:
+                name: test-release-oms-configmap
+          volumeMounts:
+            - name: oms-storage
+              mountPath: "/var/opt/universal/spool/oms"
+          resources:
+            limits:
+              cpu: 1000m
+              memory: 1Gi
+            requests:
+              cpu: 250m
+              memory: 1Gi
+          livenessProbe:
+            exec:
+              command:
+                - sh
+                - -c
+                - |
+                  pgrep -x omssrv >/dev/null ||
+                  pgrep -x ubroker >/dev/null ||
+                  pgrep -x uagsrv >/dev/null ||
+                  pgrep -x uemsrv >/dev/null
+            initialDelaySeconds: 10
+            periodSeconds: 10
+
+          readinessProbe:
+            exec:
+              command:
+                - sh
+                - -c
+                - |
+                  pgrep -x omssrv >/dev/null ||
+                  pgrep -x ubroker >/dev/null ||
+                  pgrep -x uagsrv >/dev/null ||
+                  pgrep -x uemsrv >/dev/null
+            initialDelaySeconds: 5
+            periodSeconds: 10
+      volumes:
+        - name: oms-storage
+          persistentVolumeClaim:
+            claimName: 'test-release-oms-pvc'
+---
+# Source: uc-aks/templates/uc-deployment.yaml
+# templates/uc-deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: 'test-release-uc'
+  namespace: default
+  labels:
+    app.kubernetes.io/name: uc-aks
+    app.kubernetes.io/instance: test-release
+    app.kubernetes.io/version: 7.9.0.0
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/component: uc
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: uc-aks
+      app.kubernetes.io/instance: test-release
+      app.kubernetes.io/component: uc
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: uc-aks
+        app.kubernetes.io/instance: test-release
+        app.kubernetes.io/component: uc
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8080"
+        prometheus.io/path: "/uc/resources/metrics"
+        sidecar.istio.io/inject: "true"
+        checksum/config: a142657ec36002498213d7c865a1f9c9ad66ace3f98c38f690b4cffffd575963
+        checksum/passwords: 40b0321cf5dbfe65b9b461cd0b07133fb86fd4d129c6ee1a50f479b56d696c96
+    spec:
+      serviceAccountName: default
+      securityContext: {}
+      imagePullSecrets:
+        - name: test-release-secret-repo
+      nodeSelector:
+        agentpool: ""
+        kubernetes.io/os: linux
+      containers:
+        - name: uc-container
+          image: ":"
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8080
+          envFrom:
+            - configMapRef:
+                name: test-release-uc-configmap
+          env:
+            # Secrets (either from KeyVault sync or k8s Secret)
+            - name: UC_DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: test-release-passwords
+                  key: password
+            - name: UC_TRUSTMANAGER_TRUSTSTORE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: test-release-passwords
+                  key: password-truststore
+            - name: UC_TRUSTMANAGER_TRUSTSTORE_PASSWORD_ENCRYPTED
+              valueFrom:
+                secretKeyRef:
+                  name: test-release-passwords
+                  key: UC_TRUSTMANAGER_TRUSTSTORE_PASSWORD_ENCRYPTED
+            - name: UC_KEYMANAGER_KEYSTORE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: test-release-passwords
+                  key: password-keystore
+          resources:
+            limits:
+              cpu: 1000m
+              memory: 1Gi
+            requests:
+              cpu: 250m
+              memory: 1Gi
+          startupProbe:
+            httpGet:
+              path: /uc/resources/clusternode/healthcheck
+              port: 8080
+              scheme: HTTP
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 30  # ~5 minutes
+
+          readinessProbe:
+            httpGet:
+              path: /uc/resources/clusternode/healthcheck
+              port: 8080
+              scheme: HTTP
+            initialDelaySeconds: 20
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 6
+
+          livenessProbe:
+            httpGet:
+              path: /uc/resources/clusternode/healthcheck
+              port: 8080
+              scheme: HTTP
+            initialDelaySeconds: 120
+            periodSeconds: 20
+            timeoutSeconds: 5
+            failureThreshold: 5
+---
+# Source: uc-aks/templates/gateway.yaml
+apiVersion: networking.istio.io/v1
+kind: Gateway
+metadata:
+  name: 'test-release-uac-gateway'
+  namespace: "default"
+spec:
+  selector:
+    istio: ingressgateway
+
+  servers:
+  # 80: (optional) only for web host if you want http->https redirect
+  - port:
+      number: 80
+      name: http
+      protocol: HTTP
+    hosts:
+    - ""
+
+  # 443: WEB — Istio terminates TLS (no cipher list set; defaults apply)
+  - port:
+      number: 443
+      name: https-web
+      protocol: HTTPS
+    tls:
+      mode: SIMPLE
+      credentialName:     # cert for akspresales.stonebranchdev.cloud
+      minProtocolVersion: "TLSV1_2"
+    hosts:
+    - ""
+
+  # 444: OMS — raw TLS passthrough to the pod
+  - port:
+      number: 444
+      name: tls-oms
+      protocol: TLS
+    tls:
+      mode: PASSTHROUGH
+    hosts:
+    - ""
+  # 445: UDM Node
+  - port:
+      number: 445
+      name: udm-tls
+      protocol: TLS
+    tls:
+      mode: PASSTHROUGH
+    hosts:
+    - ""
+---
+# Source: uc-aks/templates/virtualservice-uc.yaml
+apiVersion: networking.istio.io/v1
+kind: VirtualService
+metadata:
+  name: 'test-release-uc-vs'
+  namespace: "default"
+spec:
+  gateways: ["test-release-uac-gateway"]
+  hosts: [""]
+  http:
+  - match:
+    - uri: { prefix: "/uc/resources/metrics" }
+    route:
+    - destination:
+        host: 'test-release-uc-service.default.svc.cluster.local'
+        port:
+          number: 80
+  - match:
+    - uri: { prefix: "/" }
+    route:
+    - destination:
+        host: 'test-release-uc-service.default.svc.cluster.local'
+        port:
+          number: 80

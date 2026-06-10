@@ -1,0 +1,57 @@
+# Smoke test values — native Kubernetes
+# Used by: make smoke PLATFORM=native (Phase 5b)
+# Requires: external MySQL/PostgreSQL and kubeconfig pointed at the test cluster.
+platform: native
+
+uc:
+  image:
+    repository: registry.stonebranch.com/universal-controller
+    tag: "7.9.0.0"
+    pullPolicy: IfNotPresent
+  replicaCount: 1
+  resources:
+    requests:
+      memory: "512Mi"
+      cpu: "200m"
+    limits:
+      memory: "1Gi"
+      cpu: "500m"
+
+oms:
+  enabled: true
+  image:
+    repository: registry.stonebranch.com/universal-agent
+    tag: "7.9.0.0"
+    pullPolicy: IfNotPresent
+  replicaCount: 1
+  resources:
+    requests:
+      memory: "256Mi"
+      cpu: "100m"
+    limits:
+      memory: "512Mi"
+      cpu: "250m"
+  persistence:
+    enabled: true
+    storageClassName: standard
+    size: 1Gi
+
+database:
+  host: ""        # OVERRIDE: provide test DB host
+  port: 3306
+  name: uc_smoke
+  type: mysql
+  user: ucadmin
+  existingSecret: uc-smoke-db-secret
+
+credentials:
+  existingSecret: uc-smoke-passwords
+
+jvm:
+  maxRamPercentage: 50.0
+
+ucConfig:
+  ucNodeTransient: true
+
+ingress:
+  enabled: false

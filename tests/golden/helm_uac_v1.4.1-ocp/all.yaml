@@ -1,0 +1,734 @@
+---
+# Source: uc-ocp/templates/image-secret.yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: test-release-secret-repo
+  namespace: 
+data:
+  .dockerconfigjson: eyJhdXRocyI6eyJodHRwczovL2luZGV4LmRvY2tlci5pby92MS8iOnsidXNlcm5hbWUiOiJuaWxzYnVlciIsInBhc3N3b3JkIjoiZGNrcl9wYXRfTVVjT2hxeElSc2RCQmlqTVFsWEdMUEN5TjNvIiwiYXV0aCI6ImJtbHNjMkoxWlhJNlpHTnJjbDl3WVhSZlRWVmpUMmh4ZUVsU2MyUkNRbWxxVFZGc1dFZE1VRU41VGpOdiJ9fX0=
+type: kubernetes.io/dockerconfigjson
+---
+# Source: uc-ocp/templates/uc-secret.yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: test-release-passwords
+  namespace: default
+  labels:
+    app.kubernetes.io/name: uc-ocp
+    app.kubernetes.io/instance: test-release
+    app.kubernetes.io/version: 7.9.0.0
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/component: secrets
+  annotations:
+    immutable: "true"
+type: Opaque
+data:
+  password: "cm9vdHBhc3N3b3Jk"
+  password-keystore: ""
+  password-truststore: "Y2hhbmdlaXQ="
+  UC_TRUSTMANAGER_TRUSTSTORE_PASSWORD_ENCRYPTED: ""
+---
+# Source: uc-ocp/templates/oms-configmap.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: 'test-release-oms-configmap'
+  namespace: default
+data: # OMS Configuration Map -- ONLY ENVIRONMENT VARIABLES SUPPORTED: Order of Components -> UAG -> OMS -> UBR -> UEM -> UDM
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  UAGTRANSIENT: "yes"
+  
+  UAGAUTOSTART: "yes"
+  
+  
+  
+  
+
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  OMSAUTOSTART: "yes"
+---
+# Source: uc-ocp/templates/uc-configmap.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: 'test-release-uc-configmap'
+  namespace: default
+  labels:
+    app.kubernetes.io/name: uc-ocp
+    app.kubernetes.io/instance: test-release
+    app.kubernetes.io/version: 7.9.0.0
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/component: uc-config
+data:
+  
+  UC_SESSION_VALIDATION_REMOTE__ADDR_VALIDATE: "false"
+  
+  UC_DB_RDBMS: "mysql"
+  
+  UC_DB_NAME: "sb_test"
+  
+  UC_DB_URL: "jdbc:mysql://mysql-service:3306/"
+  
+  UC_DB_USER: "root"
+  
+  UC_NODE_TRANSIENT: "true"
+  
+  UC_OMS_SERVICE_TIMEOUT: "30"
+  
+  UC_NODE_HEARTBEAT_STALE__THRESHOLD__IN__SECONDS: "30"
+
+  
+  UC_LDAP_GROUPS_FILTER__INDIRECT: "true"
+  
+  UC_LDAP_GROUPS_SINGLE__PARENT__PER__CHILD: "false"
+  
+  UC_LDAP_GROUPS_UPDATE__MEMBERS: "true"
+  
+  UC_LDAP_USERS_SYNCHRONIZE__BY__RANGE: "true"
+  
+  UC_LDAP_USERS_SYNCHRONIZE__INDIRECT: "false"
+  
+  UC_LDAP_USERS_UPDATE__MEMBERSHIPS__ON__LOGIN: "false"
+
+  
+  UC_SAML_LOG_LEVEL: "INFO"
+  
+  UC_SAML_METADATA_REFRESH__INTERVAL: "120000"
+  
+  UC_SAML_SIGNATURE__ALGORITHM__URI: "http://www.w3.org/2001/04/xmldsig-more#rsa-sha256"
+  
+  UC_SAML_AUTHN__REQUEST_FORCE__AUTHN: "false"
+
+  
+  UC_TRUSTMANAGER_TRUSTSTORE: "properties/cacerts"
+  
+  UC_TRUSTMANAGER_TRUSTSTORE_TYPE: "KeyStore.getDefaultType()"
+  
+  
+
+  
+  UC_OTEL_SDK_DISABLED: "false"
+  
+  UC_OTEL_TRACES_EXPORTER: "otlp"
+  
+  UC_OTEL_METRICS_EXPORTER: "otlp"
+  
+  UC_OTEL_EXPORTER_OTLP_SERVICE_NAME: "controller"
+  
+  UC_OTEL_EXPORTER_OTLP_PROTOCOL: "grpc"
+  
+  
+  
+  
+  
+  
+  
+  UC_OTEL_EXPORTER_OTLP_TIMEOUT: "10000"
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  UC_OTEL_EXPORTER_OTLP_TRACES_TIMEOUT: "10000"
+  
+  UC_OTEL_EXPORTER_OTLP_METRICS_TIMEOUT: "10000"
+  
+  UC_OTEL_EXPORTER_OTLP_METRICS_TEMPORALITY_PREFERENCE: "CUMULATIVE"
+  
+  UC_OTEL_EXPORTER_OTLP_METRICS_DEFAULT_HISTOGRAM_AGGREGATION: "EXPLICIT_BUCKET_HISTOGRAM"
+
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+
+  
+  JDK_XML_ENTITIY_EXPANSIONLIMIT: "1"
+  
+  UC_DATE_FORMATS: "yyyy/MM/dd;dd/MM/yyyy"
+  
+  UC_LOGGING_APPENDERS: "file"
+  
+  UC_SERVLET_PORT: "8080"
+  
+  UC_ACTION_EMAIL__NOTIFICATION_ATTACH__OUTPUT_SUBSCRIPTION_TIMEOUT__IN__SECONDS: "180"
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  UC_OVERDUE_TIMER_STARTUP_THRESHOLD: "2"
+  
+  UC_TASK_SAP_RPC_TIMEOUT: "120"
+  
+  UC_TASK_ZOS_VIEW__EDIT_JCL_TIMEOUT: "60"
+  
+  UC_TRUSTMANAGER_ALGORITHM: "SunX509"
+  
+  UC_TRUSTMANAGER_PROVIDER: "SunJSSE"
+  
+  
+  
+  UC_UI_SESSIONS__TIMEOUT: "30"
+  
+  UC_WEB__SERVICE_ALLOW__UNKNOWN__PROPERTIES: "false"
+  
+  UC_WEB__SERVICE_HTTPCLIENT_SOCKET_KEEP__ALIVE: "false"
+  
+  EXTENSIONMAXBYTES: "250000000"
+---
+# Source: uc-ocp/templates/oms-pvc.yaml
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: test-release-oms-pvc
+  namespace: default
+  labels:
+    app.kubernetes.io/name: uc-ocp
+    app.kubernetes.io/instance: test-release
+    app.kubernetes.io/version: 7.9.0.0
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/component: oms-storage
+  annotations:
+    "helm.sh/resource-policy": keep
+spec:
+  accessModes: [ ReadWriteOnce ]
+  volumeMode: Filesystem
+  resources:
+    requests:
+      storage: 1Gi
+  storageClassName: ""
+---
+# Source: uc-ocp/templates/service.yaml
+# OMS service
+apiVersion: v1
+kind: Service
+metadata:
+  name: test-release-oms-service
+  namespace: default
+  labels:
+    app.kubernetes.io/name: uc-ocp
+    app.kubernetes.io/instance: test-release
+    app.kubernetes.io/version: 7.9.0.0
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/component: oms-service
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: uc-ocp
+    app.kubernetes.io/instance: test-release
+    app.kubernetes.io/component: oms
+  ports:
+    - name: oms
+      port: 7878
+      targetPort: 7878
+      protocol: TCP
+---
+# Source: uc-ocp/templates/service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: test-release-udm-service
+  namespace: default
+  labels:
+    app.kubernetes.io/name: uc-ocp
+    app.kubernetes.io/instance: test-release
+    app.kubernetes.io/version: 7.9.0.0
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/component: udm-service
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: uc-ocp
+    app.kubernetes.io/instance: test-release
+    app.kubernetes.io/component: udm
+  ports:
+    - name: udm
+      port: 7887
+      targetPort: 7887
+      protocol: TCP
+---
+# Source: uc-ocp/templates/service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: test-release-uc-service
+  namespace: default
+  labels:
+    app.kubernetes.io/name: uc-ocp
+    app.kubernetes.io/instance: test-release
+    app.kubernetes.io/version: 7.9.0.0
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/component: uc-service
+spec:
+  selector:
+    app.kubernetes.io/name: uc-ocp
+    app.kubernetes.io/instance: test-release
+    app.kubernetes.io/component: uc
+  ports:
+    - name: test-release-uc-port
+      protocol: TCP
+      port: 80
+      targetPort: 8080
+---
+# Source: uc-ocp/templates/oms-deployment.yaml
+# templates/oms-deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: test-release-oms
+  namespace: default
+  labels:
+    app.kubernetes.io/name: uc-ocp
+    app.kubernetes.io/instance: test-release
+    app.kubernetes.io/version: 7.9.0.0
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/component: oms
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: uc-ocp
+      app.kubernetes.io/instance: test-release
+      app.kubernetes.io/component: oms
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: uc-ocp
+        app.kubernetes.io/instance: test-release
+        app.kubernetes.io/component: oms
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: uac-oms
+          image: "stonebranch/universal-agent:latest"
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 7878
+            - containerPort: 7887
+          envFrom:
+            - configMapRef:
+                name: test-release-oms-configmap
+          volumeMounts:
+            - name: oms-storage
+              mountPath: "/var/opt/universal/spool/oms"
+          resources:
+            limits:
+              cpu: 1m
+              memory: 128Mi
+            requests:
+              cpu: 0.1m
+              memory: 128Mi
+          livenessProbe:
+            exec:
+              command:
+                - sh
+                - -c
+                - |
+                  pgrep -x omssrv >/dev/null ||
+                  pgrep -x ubroker >/dev/null ||
+                  pgrep -x uagsrv >/dev/null ||
+                  pgrep -x uemsrv >/dev/null
+            initialDelaySeconds: 10
+            periodSeconds: 10
+
+          readinessProbe:
+            exec:
+              command:
+                - sh
+                - -c
+                - |
+                  pgrep -x omssrv >/dev/null ||
+                  pgrep -x ubroker >/dev/null ||
+                  pgrep -x uagsrv >/dev/null ||
+                  pgrep -x uemsrv >/dev/null
+            initialDelaySeconds: 5
+            periodSeconds: 10
+
+      volumes:
+        - name: oms-storage
+          persistentVolumeClaim:
+            claimName: 'test-release-oms-pvc'
+---
+# Source: uc-ocp/templates/uc-deployment.yaml
+# templates/uc-deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: 'test-release-uc'
+  namespace: default
+  labels:
+    app.kubernetes.io/name: uc-ocp
+    app.kubernetes.io/instance: test-release
+    app.kubernetes.io/version: 7.9.0.0
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/component: uc
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: uc-ocp
+      app.kubernetes.io/instance: test-release
+      app.kubernetes.io/component: uc
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: uc-ocp
+        app.kubernetes.io/instance: test-release
+        app.kubernetes.io/component: uc
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8080"
+        prometheus.io/path: "/uc/resources/metrics"
+        checksum/config: 31abf933f04dd82bda3f94eca1a36d4de5e41665b232ce990a575cdc219103f1
+        checksum/passwords: a860c5fa04a2db1129bec783bdb6d54f179dd519513680625b9441a9d66df21b
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        seccompProfile:
+          type: RuntimeDefault
+      imagePullSecrets:
+        - name: test-release-secret-repo
+      containers:
+        - name: uc-container
+          image: "your-repo/uc:latest"
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8080
+          envFrom:
+            - configMapRef:
+                name: test-release-uc-configmap
+          env:
+            # Secrets (either from KeyVault sync or k8s Secret)
+            - name: UC_DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: test-release-passwords
+                  key: password
+            - name: UC_TRUSTMANAGER_TRUSTSTORE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: test-release-passwords
+                  key: password-truststore
+            - name: UC_TRUSTMANAGER_TRUSTSTORE_PASSWORD_ENCRYPTED
+              valueFrom:
+                secretKeyRef:
+                  name: test-release-passwords
+                  key: UC_TRUSTMANAGER_TRUSTSTORE_PASSWORD_ENCRYPTED
+            - name: UC_KEYMANAGER_KEYSTORE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: test-release-passwords
+                  key: password-keystore
+          resources:
+            limits:
+              cpu: 1000m
+              memory: 1Gi
+            requests:
+              cpu: 250m
+              memory: 1Gi
+          startupProbe:
+            httpGet:
+              path: /uc/resources/clusternode/healthcheck
+              port: 8080
+              scheme: HTTP
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 30  # ~5 minutes
+
+          readinessProbe:
+            httpGet:
+              path: /uc/resources/clusternode/healthcheck
+              port: 8080
+              scheme: HTTP
+            initialDelaySeconds: 20
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 6
+
+          livenessProbe:
+            httpGet:
+              path: /uc/resources/clusternode/healthcheck
+              port: 8080
+              scheme: HTTP
+            initialDelaySeconds: 120
+            periodSeconds: 20
+            timeoutSeconds: 5
+            failureThreshold: 5
+---
+# Source: uc-ocp/templates/route.yaml
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: test-release-oms-route
+  namespace: default
+  labels:
+    app.kubernetes.io/name: uc-ocp
+    app.kubernetes.io/instance: test-release
+    app.kubernetes.io/version: 7.9.0.0
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/component: oms-route
+spec:
+  to:
+    kind: Service
+    name: test-release-oms-service
+  tls:
+    termination: passthrough
+    insecureEdgeTerminationPolicy: None
+---
+# Source: uc-ocp/templates/route.yaml
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: test-release-uc-route
+  namespace: default
+  labels:
+    app.kubernetes.io/name: uc-ocp
+    app.kubernetes.io/instance: test-release
+    app.kubernetes.io/version: 7.9.0.0
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/component: uc-route 
+spec:
+  to:
+    kind: Service
+    name: test-release-uc-service
+  tls:
+    termination: edge
+    insecureEdgeTerminationPolicy: None
+---
+# Source: uc-ocp/templates/hostname-appendum.yaml
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: test-release-cm-patcher
+  namespace: default
+  annotations:
+    "helm.sh/hook": post-install,post-upgrade
+    "helm.sh/hook-weight": "5"
+    "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
+---
+# Source: uc-ocp/templates/hostname-appendum.yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: test-release-cm-patcher
+  namespace: default
+  annotations:
+    "helm.sh/hook": post-install,post-upgrade
+    "helm.sh/hook-weight": "5"
+    "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
+rules:
+  - apiGroups: ["route.openshift.io"]
+    resources: ["routes"]
+    verbs: ["get","list","watch"]
+  - apiGroups: [""]
+    resources: ["configmaps"]
+    verbs: ["get","patch"]
+---
+# Source: uc-ocp/templates/hostname-appendum.yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: test-release-cm-patcher
+  namespace: default
+  annotations:
+    "helm.sh/hook": post-install,post-upgrade
+    "helm.sh/hook-weight": "5"
+    "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
+subjects:
+  - kind: ServiceAccount
+    name: test-release-cm-patcher
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: test-release-cm-patcher
+---
+# Source: uc-ocp/templates/hostname-appendum.yaml
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: test-release-oms-route-cm-patch
+  namespace: default
+  annotations:
+    "helm.sh/hook": post-install,post-upgrade
+    "helm.sh/hook-weight": "10"
+    "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
+spec:
+  backoffLimit: 2
+  template:
+    spec:
+      serviceAccountName: test-release-cm-patcher
+      restartPolicy: Never
+      containers:
+        - name: patcher
+          image: bitnami/kubectl:latest
+          command: ["/bin/bash","-lc"]
+          env:
+            - name: NS
+              value: "default"
+            - name: ROUTE_NAME
+              value: "test-release-oms-route"
+            - name: CONFIGMAP_NAME
+              value: "test-release-oms-configmap"
+          args:
+            - |
+              set -euo pipefail
+              echo "Waiting for Route ${ROUTE_NAME} in ${NS} to be Admitted..."
+              for i in {1..90}; do
+                HOST="$(kubectl -n "${NS}" get route "${ROUTE_NAME}" -o jsonpath='{.status.ingress[0].host}' 2>/dev/null || true)"
+                ADMIT="$(kubectl -n "${NS}" get route "${ROUTE_NAME}" -o jsonpath='{.status.ingress[0].conditions[?(@.type=="Admitted")].status}' 2>/dev/null || true)"
+                if [[ -n "${HOST}" && "${ADMIT}" == "True" ]]; then
+                  echo "Route admitted with host: ${HOST}"
+                  break
+                fi
+                sleep 2
+              done
+              if [[ -z "${HOST:-}" ]]; then
+                echo "ERROR: Route host not available"; exit 1
+              fi
+              SNI="443@${HOST}:${HOST}"
+              echo "Patching ${CONFIGMAP_NAME} data.UAGTLSSNIHOSTNAME=${SNI}"
+              # Merge-patch ONLY that key
+              kubectl -n "${NS}" patch configmap "${CONFIGMAP_NAME}" --type merge \
+                -p "{\"data\":{\"UAGTLSSNIHOSTNAME\":\"${SNI}\"}}"
+---
+# Source: uc-ocp/templates/route.yaml
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: test-release-udm-route
+  namespace: default
+  labels:
+    app.kubernetes.io/name: uc-ocp
+    app.kubernetes.io/instance: test-release
+    app.kubernetes.io/version: 7.9.0.0
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/component: udm-route
+  annotations:
+    "helm.sh/hook": pre-install,pre-upgrade
+    "helm.sh/hook-weight": "1"
+    "helm.sh/hook-delete-policy": before-hook-creation
+spec:
+  to:
+    kind: Service
+    name: test-release-udm-service
+  tls:
+    termination: passthrough
+    insecureEdgeTerminationPolicy: None

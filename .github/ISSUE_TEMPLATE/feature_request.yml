@@ -1,0 +1,58 @@
+name: Feature Request
+description: Suggest a new capability or improvement to the charts
+labels: ["enhancement"]
+assignees:
+  - Len0608
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for suggesting an improvement. Please check [docs/ROADMAP.md](../../docs/ROADMAP.md)
+        first — your request may already be planned.
+
+  - type: dropdown
+    id: chart
+    attributes:
+      label: Affected chart(s)
+      multiple: true
+      options:
+        - helm_ua_v1.5.1-aks
+        - helm_ua_v1.5.1-ocp
+        - helm_uac_v1.0-native
+        - helm_uac_v1.4.1-ocp
+        - helm_uac_v1.5-aks
+        - All charts
+    validations:
+      required: true
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem or motivation
+      description: What is the use case or limitation you're running into?
+    validations:
+      required: true
+
+  - type: textarea
+    id: solution
+    attributes:
+      label: Proposed solution
+      description: |
+        Describe the change you'd like. If you have a values API in mind, show
+        what the new values.yaml section would look like.
+      render: yaml
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: What workarounds are you using today?
+
+  - type: checkboxes
+    id: constraints
+    attributes:
+      label: Constraints
+      options:
+        - label: Must not require editing chart internals (all config via -f / --set)
+        - label: Must work on all three platforms (native, OpenShift, AKS) or clearly platform-scoped
+        - label: Must not weaken default security posture

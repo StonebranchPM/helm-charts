@@ -1,0 +1,30 @@
+# yamllint configuration for Helm chart sources
+# Used by chart-testing (ct lint) and make lint
+extends: default
+
+rules:
+  # Helm templates can have long lines; warn rather than error
+  line-length:
+    max: 200
+    level: warning
+
+  # Tolerate trailing spaces in generated files
+  trailing-spaces:
+    level: warning
+
+  # One space after # in comments
+  comments:
+    min-spaces-from-content: 1
+    level: warning
+
+  # Helm values.yaml files do not require a leading ---
+  document-start: disable
+
+  # true/false/yes/no are all valid in Helm values
+  truthy: disable
+
+  # Allow both 2-space and 4-space indented blocks
+  indentation:
+    spaces: 2
+    indent-sequences: consistent
+    check-multi-line-strings: false

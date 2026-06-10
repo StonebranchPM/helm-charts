@@ -1,6 +1,6 @@
 dependencies:
 - name: universal-agent
-  repository: file://../universal-agent
+  repository: https://stonebranchpm.github.io/helm-charts
   version: 1.5.1
-digest: sha256:ff4fc6b3ffa16afe76df5f405e703beb4ad13a59d6393e1fb1257549249894e5
-generated: "2026-06-10T10:04:18.79789992+02:00"
+digest: sha256:ffd23786c9f4989d0fbbe1e406598aa366ef99b1cad87684ba7d7ff0a7fdc031
+generated: "2026-06-10T12:47:26.966751034+02:00"

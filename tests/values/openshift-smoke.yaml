@@ -1,0 +1,79 @@
+# Smoke test values — OpenShift
+# Used by: make smoke PLATFORM=openshift (Phase 5b)
+# Requires: OpenShift cluster access + external DB.
+# OCP restricted-v2: do NOT set runAsUser/runAsGroup — SCC assigns from namespace UID range.
+platform: openshift
+
+uc:
+  image:
+    repository: registry.stonebranch.com/universal-controller
+    tag: "7.9.0.0"
+    pullPolicy: IfNotPresent
+  replicaCount: 1
+  resources:
+    requests:
+      memory: "512Mi"
+      cpu: "200m"
+    limits:
+      memory: "1Gi"
+      cpu: "500m"
+
+oms:
+  enabled: true
+  image:
+    repository: registry.stonebranch.com/universal-agent
+    tag: "7.9.0.0"
+    pullPolicy: IfNotPresent
+  replicaCount: 1
+  resources:
+    requests:
+      memory: "256Mi"
+      cpu: "100m"
+    limits:
+      memory: "512Mi"
+      cpu: "250m"
+  persistence:
+    enabled: true
+    storageClassName: ""  # use cluster default
+    size: 1Gi
+
+# OCP restricted-v2 compatible: drop runAsUser/runAsGroup; SCC assigns UID
+securityContext:
+  uc:
+    pod:
+      runAsNonRoot: true
+      seccompProfile:
+        type: RuntimeDefault
+    container:
+      allowPrivilegeEscalation: false
+      capabilities:
+        drop: [ALL]
+  oms:
+    pod:
+      runAsNonRoot: true
+      seccompProfile:
+        type: RuntimeDefault
+    container:
+      allowPrivilegeEscalation: false
+      capabilities:
+        drop: [ALL]
+
+database:
+  host: ""        # OVERRIDE: provide test DB host
+  port: 3306
+  name: uc_smoke
+  type: mysql
+  user: ucadmin
+  existingSecret: uc-smoke-db-secret
+
+credentials:
+  existingSecret: uc-smoke-passwords
+
+jvm:
+  maxRamPercentage: 50.0
+
+ucConfig:
+  ucNodeTransient: true
+
+route:
+  enabled: true
