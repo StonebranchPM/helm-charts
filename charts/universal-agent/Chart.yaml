@@ -3,7 +3,7 @@ name: universal-agent
 description: >
   Unified Helm chart for Stonebranch Universal Agent (OMS + UAG + UDM).
   Platform differences (AKS/Istio, OpenShift/Route, native) are selected
-  via the `platform` value — no chart forking required.
+  via the `platform` value - no chart forking required.
 type: application
 version: 1.5.1
 appVersion: "7.9.0.0"
