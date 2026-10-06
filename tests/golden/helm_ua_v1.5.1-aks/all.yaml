@@ -1,13 +1,4 @@
 ---
-# Source: ua-aks/templates/serviceaccount.yaml
-apiVersion: v1
-kind: ServiceAccount
-metadata:
-  name: ua-aks-test-release
-  namespace: default
-  annotations:
-    azure.workload.identity/client-id: ""
----
 # Source: ua-aks/templates/configmap.yaml
 apiVersion: v1
 kind: ConfigMap
@@ -30,9 +21,9 @@ data: # OMS Configuration Map -- ONLY ENVIRONMENT VARIABLES SUPPORTED: Order of 
   
   
   
+  UAGNETNAME: "UA-CI-LINT"
   
-  
-  
+  UAGOMSSERVERS: "7878@ci.example.com"
   
   
   
@@ -280,15 +271,14 @@ spec:
         app.kubernetes.io/name: ""
         app.kubernetes.io/instance: test-release
         app.kubernetes.io/component: ua
-    spec:
-      serviceAccountName:     
+    spec:    
       securityContext:
         runAsNonRoot: true
         seccompProfile:
           type: RuntimeDefault
       containers:
         - name: uac-ua
-          image: "stonebranch/universal-agent:latest"
+          image: "stonebranch/universal-agent:7.8.0.0"
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 7878
@@ -335,42 +325,3 @@ spec:
         - name: oms-storage
           persistentVolumeClaim:
             claimName: test-release-ua-pvc
----
-# Source: ua-aks/templates/gateway.yaml
-apiVersion: networking.istio.io/v1
-kind: Gateway
-metadata:
-  name: 'test-release-ua-gateway'
-  namespace: "default"
-spec:
-  selector:
-    istio: ingressgateway
-  servers:
-  - port:
-      number: 15446
-      name: udm-tls
-      protocol: TLS
-    tls:
-      mode: PASSTHROUGH
-    hosts:
-    - ""
----
-# Source: ua-aks/templates/virtualservice.yaml
-apiVersion: networking.istio.io/v1
-kind: VirtualService
-metadata:
-  name: test-release-ua-vs
-  namespace: default
-spec:
-  gateways: ["test-release-ua-gateway"]
-  hosts: [""]
-  tls:
-  - match:
-    - port: 446
-      sniHosts: [""]
-    route:
-    - destination:
-        host: 'test-release-ua-service.default.svc.cluster.local'
-        port:
-          number: 7887
-      weight: 100

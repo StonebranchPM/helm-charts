@@ -175,7 +175,9 @@ jobs:
         run: |
           changed=0
           for chart in helm_ua_v1.5.1-aks helm_ua_v1.5.1-ocp helm_uac_v1.0-native helm_uac_v1.4.1-ocp helm_uac_v1.5-aks; do
-            helm template test-release "$chart" > /tmp/golden-${chart//\//-}.yaml
+            CI_VALUES=""
+            [ -f "$chart/ci/lint-values.yaml" ] && CI_VALUES="--values $chart/ci/lint-values.yaml"
+            helm template test-release "$chart" $CI_VALUES > /tmp/golden-${chart//\//-}.yaml
             if ! diff -q "tests/golden/${chart}/all.yaml" "/tmp/golden-${chart//\//-}.yaml" > /dev/null 2>&1; then
               echo "::warning::Golden file changed for $chart — run 'make golden-update' if intentional"
               diff "tests/golden/${chart}/all.yaml" "/tmp/golden-${chart//\//-}.yaml" || true
