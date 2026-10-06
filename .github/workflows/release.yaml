@@ -65,10 +65,21 @@ jobs:
 
       - name: Push packages + index to gh-pages
         run: |
-          # Shallow-clone gh-pages so we can update it
-          git clone --branch gh-pages --single-branch --depth 1 \
-            "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/StonebranchPM/helm-charts.git" \
-            /tmp/gh-pages-repo
+          REPO_URL="https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/StonebranchPM/helm-charts.git"
+
+          # Bootstrap gh-pages if it doesn't exist yet
+          if ! git ls-remote --exit-code --heads "$REPO_URL" gh-pages; then
+            git clone "$REPO_URL" /tmp/gh-pages-repo
+            cd /tmp/gh-pages-repo
+            git checkout --orphan gh-pages
+            git reset --hard
+            git commit --allow-empty -m "chore: initialize gh-pages"
+            git push origin gh-pages
+            cd -
+          else
+            git clone --branch gh-pages --single-branch --depth 1 \
+              "$REPO_URL" /tmp/gh-pages-repo
+          fi
 
           cp /tmp/helm-packages/*.tgz  /tmp/gh-pages-repo/
           cp /tmp/helm-packages/index.yaml /tmp/gh-pages-repo/
