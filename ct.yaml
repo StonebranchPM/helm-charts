@@ -5,6 +5,9 @@
 chart-dirs:
   - charts
 
+# Maintainer names are team names, not GitHub usernames — skip the GitHub user lookup
+validate-maintainers: false
+
 # Lint configuration file
 lint-conf: lintconf.yaml
 
