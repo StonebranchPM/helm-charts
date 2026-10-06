@@ -78,7 +78,9 @@ jobs:
             echo "Rendering templates for $chart..."
             BASENAME="$(basename "$chart")"
             RELEASE_NAME="$(printf '%s' "$BASENAME" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9-]/-/g')"
-            helm template "$RELEASE_NAME" "$chart" > /dev/null
+            CI_VALUES=""
+            [ -f "$chart/ci/lint-values.yaml" ] && CI_VALUES="--values $chart/ci/lint-values.yaml"
+            helm template "$RELEASE_NAME" "$chart" $CI_VALUES > /dev/null
           done
 
   release-charts:
