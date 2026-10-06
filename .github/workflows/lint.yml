@@ -40,7 +40,11 @@ jobs:
             helm_uac_v1.0-native helm_uac_v1.4.1-ocp helm_uac_v1.5-aks \
             charts/universal-agent charts/universal-controller; do
             echo "::group::helm lint $chart"
-            if ! helm lint "$chart"; then
+            lint_args="$chart"
+            if [ -f "$chart/ci/lint-values.yaml" ]; then
+              lint_args="$chart --values $chart/ci/lint-values.yaml"
+            fi
+            if ! helm lint $lint_args; then
               echo "::error::helm lint FAILED for $chart"
               failed=1
             fi

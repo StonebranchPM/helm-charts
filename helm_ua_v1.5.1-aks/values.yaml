@@ -3,7 +3,7 @@
 #################################################################################################
 ### Workload Identity configuration
 workloadIdentity:
-  enabled: true
+  enabled: false
   clientId: ""
   serviceAccountName: ""
 
@@ -13,7 +13,7 @@ UA:
 
 ############################################ Istio #####################################################
 istio:
-  enabled: true
+  enabled: false
   host: ""
   hostCredentials: ""
   TLSProtocol: "TLSV1_2"
@@ -26,7 +26,7 @@ uaDeployment:
   replicas: 1
   image:
     repository: stonebranch/universal-agent
-    tag: latest
+    tag: ""  # required — pin to a specific UAC release tag, e.g. "7.8.0.0"
   resources:
     requests:
       memory: "512Mi"

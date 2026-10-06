@@ -1,0 +1,8 @@
+# Minimal values for helm lint / CI — not for production use.
+uaConfig:
+  netname: "UA-CI-LINT"
+  omsServers: "7878@ci.example.com"
+
+uaDeployment:
+  image:
+    tag: "7.8.0.0"

@@ -45,9 +45,8 @@
             "repository": { "type": "string", "minLength": 1 },
             "tag": {
               "type": "string",
-              "minLength": 1,
               "not": { "const": "latest" },
-              "description": "Pin to a specific UAC release tag. 'latest' is rejected to prevent silent drift."
+              "description": "Pin to a specific UAC release tag, e.g. '7.8.0.0'. 'latest' is rejected to prevent silent drift."
             }
           }
         },
@@ -92,7 +91,7 @@
         "clientId": { "type": "string" },
         "serviceAccountName": { "type": "string" }
       },
-      "if": { "properties": { "enabled": { "const": true } } },
+      "if": { "required": ["enabled"], "properties": { "enabled": { "const": true } } },
       "then": {
         "required": ["clientId", "serviceAccountName"],
         "properties": {
@@ -111,7 +110,7 @@
         "udmConnectionPort": { "type": "integer" },
         "udmConnectionPortInternal": { "type": "integer" }
       },
-      "if": { "properties": { "enabled": { "const": true } } },
+      "if": { "required": ["enabled"], "properties": { "enabled": { "const": true } } },
       "then": {
         "required": ["host"],
         "properties": { "host": { "minLength": 1 } }
